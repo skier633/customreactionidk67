@@ -1,0 +1,18 @@
+venv/
+__pycache__/
+.pytest_cache/
+.DS_Store
+*.tmp
+
+# your own stuff never goes on github: recordings, trained model, downloaded models, settings
+data/
+models/
+settings.json
+test_trigger.json
+
+# pictures and sounds you add stay on your computer. only the demo ones are in the repo
+# (made from scratch by tools/make_demo_assets.py)
+assets/*
+!assets/demo_explosion.gif
+sounds/*
+!sounds/demo_bang.wav

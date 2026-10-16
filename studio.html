@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gesture Studio</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --card: #ffffff; --text: #1d1c1a; --muted: #6b6862; --line: #e4e1db;
+    --accent: #e0457b; --accent-text: #ffffff; --warn-bg: #fff4d6; --warn-line: #f0d48a;
+    --bad: #c4352b; --good: #2f8a4c; --code-bg: #f0eee9; --chip: #f1eee8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161514; --card: #201f1d; --text: #edeae4; --muted: #9c978e; --line: #34322e;
+      --accent: #f0659a; --accent-text: #1a0d12; --warn-bg: #3a3017; --warn-line: #66542a;
+      --bad: #f07368; --good: #6cc78a; --code-bg: #2a2926; --chip: #2c2a27;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { max-width: 900px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 36px 0 12px; }
+  .sub { color: var(--muted); margin: 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .spread { justify-content: space-between; }
+  .name { font-weight: 600; font-size: 16px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  select, input[type=text], input[type=number] { flex: 1; min-width: 0; font: inherit; padding: 6px 8px; border-radius: 6px;
+         border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  input[type=number] { flex: 0 0 76px; }
+  input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  select:disabled, input:disabled { opacity: .45; }
+  button { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line);
+           background: var(--card); color: var(--text); cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--muted); }
+  button:disabled { opacity: .45; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+  button.danger { color: var(--bad); }
+  button.icon { padding: 6px 9px; }
+  .banner { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 12px; padding: 14px 16px; margin-top: 20px; }
+  .job pre { background: var(--code-bg); border-radius: 8px; padding: 10px; margin: 10px 0 0; max-height: 220px;
+             overflow: auto; font: 12px/1.45 ui-monospace, Menlo, monospace; white-space: pre-wrap; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); display: inline-block; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  .ok { color: var(--good); } .bad { color: var(--bad); }
+
+  /* one gesture (or one hand version of it) */
+  .slot { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
+  .slot-head { display: flex; align-items: center; gap: 10px; }
+  .slot-title { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); width: 84px; flex-shrink: 0; }
+  .chips { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+  .chip { background: var(--chip); border-radius: 999px; padding: 2px 10px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .chip.none { background: none; color: var(--muted); padding-left: 0; }
+  .slot.off .chips { opacity: .45; }
+  .chip.off { background: none; color: var(--bad); padding-left: 0; font-weight: 600; }
+  /* on/off switch */
+  .switch { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
+  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 1; }
+  .switch span { position: absolute; inset: 0; background: var(--line); border-radius: 999px; transition: background .15s; }
+  .switch span::before { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; border-radius: 50%;
+                         background: var(--card); box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
+  .switch input:checked + span { background: var(--accent); }
+  .switch input:checked + span::before { transform: translateX(16px); }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .editor { margin-top: 12px; }
+  .groups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  @media (max-width: 760px) { .groups { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px) { .groups { grid-template-columns: 1fr; } .slot-title { width: 100%; } .slot-head { flex-wrap: wrap; }
+                              .chips { flex-basis: 100%; } }
+  fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px 8px; margin: 0; min-width: 0; }
+  legend { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 0 4px; }
+  label.field { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+  label.field > span:first-child { width: 58px; color: var(--muted); font-size: 13px; flex-shrink: 0; }
+  output { width: 34px; text-align: right; font-size: 13px; color: var(--muted); flex-shrink: 0; }
+  .timing { margin-top: 10px; gap: 14px; }
+  .timing label { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+  .timing .grow { flex: 1; }
+
+  .thumbs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+  .thumb { width: 96px; text-align: center; font-size: 12px; color: var(--muted); word-break: break-all; }
+  .thumb img, .thumb video { width: 96px; height: 96px; object-fit: contain; border-radius: 8px; border: 1px solid var(--line);
+               background: repeating-conic-gradient(var(--line) 0 25%, transparent 0 50%) 0 0 / 16px 16px; }
+  .drop { display: block; border: 2px dashed var(--line); border-radius: 12px; padding: 22px; text-align: center; color: var(--muted); cursor: pointer; }
+  .drop.over { border-color: var(--accent); color: var(--text); }
+  .sounds { margin-top: 10px; }
+  .sounds .row { padding: 4px 0; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--text); color: var(--bg);
+           padding: 8px 14px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+  #toast.error { background: var(--bad); color: #fff; }
+</style>
+</head>
+<body>
+<main>
+  <h1>gesture studio</h1>
+  <p class="sub">pick what each gesture does. everything saves by itself, and gesture_cam.py picks it up while it's running.
+    hit <b>try it</b> to see an effect without doing the gesture, and use the switch next to a gesture to turn it off if it goes off too easily.</p>
+
+  <div id="banner"></div>
+  <div id="job"></div>
+
+  <h2>air pen</h2>
+  <div id="pen"></div>
+
+  <h2>ready-made gestures</h2>
+  <p class="muted" style="margin:-4px 0 12px">these come with mediapipe, so they work without recording anything. they do nothing until you give them an effect.</p>
+  <div id="readymade"></div>
+
+  <h2>your gestures</h2>
+  <div id="none"></div>
+  <div id="gestures"></div>
+  <div class="card">
+    <div class="name" style="margin-bottom:8px">add a gesture</div>
+    <form id="add" class="row">
+      <input type="text" id="new-name" placeholder="name, like thumbs_up or rock_on" autocomplete="off">
+      <button class="primary" type="submit">record it</button>
+    </form>
+    <p class="muted" style="margin:8px 0 0">a camera window opens (it might be behind this one). you get 3 seconds, then it records for 15.
+      hold the pose and move your hand around, tilt it, go closer and farther. more variety = works better.</p>
+  </div>
+
+  <h2>pictures, gifs & sounds</h2>
+  <div class="card">
+    <label class="drop" id="drop">
+      <input type="file" id="file" multiple accept=".png,.jpg,.jpeg,.gif,.mp4,.mov,.m4v,.wav,.mp3,.m4a" hidden>
+      drop pictures (png, jpg), gifs or videos (gif, mp4, mov) and sounds (wav, mp3) here, or click to pick files
+    </label>
+    <div class="thumbs" id="images"></div>
+    <div class="sounds" id="sound-list"></div>
+  </div>
+</main>
+<div id="toast"></div>
+
+<script>
+let S = null;              // latest state from the server
+let dataKey = "";          // used to only redraw the settings when they actually change
+let polling = null;
+let audio = null;
+const open = new Set();    // which editors are open
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+
+const READY_INFO = {
+  thumbs_up: ["thumbs up", "👍"], thumbs_down: ["thumbs down", "👎"], open_palm: ["open palm", "✋"],
+  fist: ["fist", "✊"], pointing_up: ["pointing up", "☝️"], victory: ["peace / victory", "✌️"], i_love_you: ["i love you", "🤟"],
+};
+
+function toast(msg, isError) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "show" + (isError ? " error" : "");
+  clearTimeout(t.timer);
+  t.timer = setTimeout(() => (t.className = ""), isError ? 4000 : 1800);
+}
+
+async function api(path, body, isForm) {
+  const opts = body === undefined ? {} : {
+    method: "POST",
+    body: isForm ? body : JSON.stringify(body),
+    headers: isForm ? {} : {"Content-Type": "application/json"},
+  };
+  const res = await fetch(path, opts);
+  const data = await res.json().catch(() => ({error: "something went wrong"}));
+  if (!res.ok) { toast(data.error || "something went wrong", true); return null; }
+  if (data.job) render(data);
+  return data;
+}
+
+// ---------- the effect editor ----------
+
+function options(list, current, noneLabel) {
+  // list = [[value, label], ...]
+  const all = noneLabel === undefined ? list : [["", noneLabel]].concat(list);
+  return all.map(([v, l]) => `<option value="${esc(v)}"${v === current ? " selected" : ""}>${esc(l)}</option>`).join("");
+}
+
+function fileOptions(files, current, noneLabel) {
+  const list = files.map((f) => [f, f]);
+  // keep showing a file thats in the settings but missing from the folder
+  if (current && !files.includes(current)) list.unshift([current, current + " (missing)"]);
+  return options(list, current, noneLabel);
+}
+
+const pairs = (obj) => Object.entries(obj);
+
+function select(key, field, inner, disabled) {
+  return `<select data-key="${esc(key)}" data-field="${field}"${disabled ? " disabled" : ""}>${inner}</select>`;
+}
+
+function slider(key, field, value, disabled) {
+  return `<input type="range" min="0" max="100" step="5" value="${value}" data-key="${esc(key)}" data-field="${field}"${disabled ? " disabled" : ""}>
+          <output>${value}</output>`;
+}
+
+function editor(key) {
+  const c = S.effects[key], o = S.options;
+  return `<div class="editor">
+    <div class="groups">
+      <fieldset><legend>picture</legend>
+        <label class="field"><span>file</span>${select(key, "picture", fileOptions(S.images, c.picture, "none"))}</label>
+        <label class="field"><span>where</span>${select(key, "picture_where", options(pairs(o.picture_where), c.picture_where), !c.picture)}</label>
+      </fieldset>
+      <fieldset><legend>gif / video</legend>
+        <label class="field"><span>file</span>${select(key, "gif", fileOptions(S.gifs, c.gif, "none"))}</label>
+        <label class="field"><span>where</span>${select(key, "gif_where", options(pairs(o.gif_where), c.gif_where), !c.gif)}</label>
+      </fieldset>
+      <fieldset><legend>sound</legend>
+        <label class="field"><span>file</span>${select(key, "sound", fileOptions(S.sound_files, c.sound, "none"))}
+          <button class="icon" title="play" data-play-key="${esc(key)}">▶</button></label>
+        <label class="field"><span>volume</span>${slider(key, "volume", c.volume, !c.sound)}</label>
+      </fieldset>
+      <fieldset><legend>distortion</legend>
+        <label class="field"><span>type</span>${select(key, "distortion", options(pairs(o.distortion), c.distortion, "none"))}</label>
+        <label class="field"><span>where</span>${select(key, "distortion_where", options(pairs(o.distortion_where), c.distortion_where),
+          !c.distortion || c.distortion === "wave" || c.distortion === "mirror")}</label>
+        <label class="field"><span>strength</span>${slider(key, "strength", c.strength, !c.distortion)}</label>
+      </fieldset>
+      <fieldset><legend>look</legend>
+        <label class="field"><span>filter</span>${select(key, "filter", options(pairs(o.filter), c.filter, "none"))}</label>
+        <label class="field"><span>opacity</span>${slider(key, "opacity", c.opacity, !c.picture && !c.gif)}</label>
+        <label class="field"><span>shake</span>${slider(key, "shake", c.shake)}</label>
+      </fieldset>
+      <fieldset><legend>extras</legend>
+        <label class="field"><span>particles</span>${select(key, "particles", options(pairs(o.particles), c.particles, "none"))}</label>
+        <label class="field"><span>text</span><input type="text" maxlength="60" placeholder="caption" value="${esc(c.text)}"
+          data-key="${esc(key)}" data-field="text"></label>
+      </fieldset>
+    </div>
+    <div class="row timing">
+      <label>lasts <input type="number" min="0.1" max="10" step="0.1" value="${c.duration}" data-key="${esc(key)}" data-field="duration"> sec</label>
+      <label><input type="checkbox" data-key="${esc(key)}" data-field="fade"${c.fade ? " checked" : ""}> fade in/out</label>
+      <label>wait <input type="number" min="0" max="30" step="0.5" value="${c.cooldown}" data-key="${esc(key)}" data-field="cooldown"> sec before it can go again</label>
+      <span class="grow"></span>
+      <button data-reset="${esc(key)}">reset</button>
+    </div>
+  </div>`;
+}
+
+function summary(key) {
+  // little chips that say what the gesture does
+  const c = S.effects[key], o = S.options, chips = [];
+  if (c.picture) chips.push(`picture: ${c.picture} (${c.picture_where === "burst" ? "burst" : o.picture_where[c.picture_where]})`);
+  if (c.gif) chips.push(`gif: ${c.gif} (${o.gif_where[c.gif_where]})`);
+  if (c.sound) chips.push(`sound: ${c.sound}`);
+  if (c.distortion) chips.push(o.distortion[c.distortion]);
+  if (c.particles) chips.push(c.particles);
+  if (c.filter) chips.push(o.filter[c.filter]);
+  if (c.shake) chips.push("shake");
+  if (c.text) chips.push(`“${c.text}”`);
+  if (!chips.length) return `<span class="chip none">does nothing yet</span>`;
+  chips.push(`${c.duration}s`);
+  return chips.map((t) => `<span class="chip" title="${esc(t)}">${esc(t)}</span>`).join("");
+}
+
+function slot(key, title) {
+  const isOpen = open.has(key);
+  const on = S.effects[key].enabled;
+  return `<div class="slot${on ? "" : " off"}">
+    <div class="slot-head">
+      ${title ? `<div class="slot-title">${title}</div>` : ""}
+      <label class="switch" title="${on ? "on. click to switch this gesture off" : "off. click to switch it back on"}">
+        <input type="checkbox" data-key="${esc(key)}" data-field="enabled"${on ? " checked" : ""} aria-label="gesture on/off"><span></span></label>
+      <div class="chips">${on ? "" : `<span class="chip off">off</span>`}${summary(key)}</div>
+      <button data-try="${esc(key)}">try it</button>
+      <button data-toggle="${esc(key)}"${isOpen ? ' class="primary"' : ""}>${isOpen ? "done" : "edit"}</button>
+    </div>
+    ${isOpen ? editor(key) : ""}
+  </div>`;
+}
+
+// ---------- drawing the page ----------
+
+function renderJob() {
+  const j = S.job;
+  if (!j.label) { $("job").innerHTML = ""; return; }
+  let title;
+  if (j.running) {
+    const hint = j.label.startsWith("recording") ? " — look at the camera window (it might be behind this one)" : "";
+    title = `<span class="dot"></span> <b>${esc(j.label)}…</b><span class="muted">${esc(hint)}</span>`;
+  } else {
+    title = j.ok ? `<b class="ok">done ${esc(j.label)}</b>` : `<b class="bad">${esc(j.label)} didn't finish</b>`;
+  }
+  const out = j.output.trim();
+  $("job").innerHTML = `<div class="card job" style="margin-top:20px">
+      <div class="row spread"><div class="row">${title}</div>
+        ${j.running ? `<button data-action="stop">stop</button>` : `<button data-action="close-job">close</button>`}</div>
+      ${out ? `<pre>${esc(out)}</pre>` : ""}</div>`;
+  const pre = $("job").querySelector("pre");
+  if (pre) pre.scrollTop = pre.scrollHeight;
+}
+
+function renderBanner() {
+  const busy = S.job.running;
+  let html = "";
+  if (S.needs_training) {
+    const enough = S.gestures.length + (S.none_samples ? 1 : 0) >= 2;
+    html = `<div class="banner row spread">
+      <div><b>train your gestures</b><div class="muted">${enough
+        ? "your gestures changed since the last training. train so gesture cam knows (takes a few seconds)"
+        : "you need at least 2 recordings (one of them \"none\") before you can train"}</div></div>
+      <button class="primary" data-action="train"${busy || !enough ? " disabled" : ""}>train now</button></div>`;
+  }
+  $("banner").innerHTML = html;
+}
+
+function renderSettings() {
+  const busy = S.job.running ? " disabled" : "";
+
+
+  const p = S.pen;
+  $("pen").innerHTML = `<div class="card">
+    <div class="row spread"><div><div class="name">draw in the air</div>
+      <div class="muted">pinch your thumb and index finger together (other fingers curled in, like holding a pen) to draw with your index fingertip, let go to stop.
+        in the camera window, C clears it and P turns the pen on/off.</div></div>
+      <label class="row"><input type="checkbox" data-pen-field="enabled"${p.enabled ? " checked" : ""}> on</label></div>
+    <div class="groups" style="margin-top:12px">
+      <fieldset><legend>ink</legend>
+        <label class="field"><span>color</span><input type="color" value="${esc(p.color)}" data-pen-field="color"></label>
+        <label class="field"><span>size</span><input type="range" min="2" max="30" step="1" value="${p.thickness}" data-pen-field="thickness"><output>${p.thickness}</output></label>
+        <label class="field"><span>glow</span><input type="checkbox" data-pen-field="glow"${p.glow ? " checked" : ""}></label>
+      </fieldset>
+      <fieldset><legend>pinch</legend>
+        <label class="field"><span>grip</span><select data-pen-field="grip">${options(pairs(S.pen_grips), p.grip)}</select></label>
+        <label class="field" style="align-items:flex-start"><span>in the call</span>
+          <span><label class="row" style="gap:6px"><input type="checkbox" data-pen-field="readable_for_call"${p.readable_for_call ? " checked" : ""}> readable for them</label>
+          <span class="muted">${p.readable_for_call
+            ? "they see the drawing exactly like you do, so writing reads right (it shows up on the other side from your hand for them)"
+            : "the ink follows your hand on their screen too, but writing looks backwards to them"}</span></span></label>
+      </fieldset>
+      <fieldset><legend>clearing</legend>
+        <label class="field"><span>clear by</span><select data-pen-field="clear_with">${options(pairs(S.pen_clear), p.clear_with)}</select></label>
+        <label class="field"><span>fade</span><input type="number" min="0" max="60" step="1" value="${p.fade_after}" data-pen-field="fade_after">
+          <span class="muted">sec after you let go (0 = stays)</span></label>
+        <button data-action="clear-pen">clear drawing now</button>
+      </fieldset>
+    </div></div>`;
+
+  // ready-made gestures are folded away unless you open them (or one already does something)
+  const hasEffect = (k) => summary(k).indexOf("does nothing yet") === -1;
+  const used = S.ready_made.filter((k) => hasEffect(k) || hasEffect(k + "_x2"));
+  const showAll = open.has("__ready");
+  const readyCards = (showAll ? S.ready_made : used).map((key) => {
+    const [title, icon] = READY_INFO[key] || [key, ""];
+    return `<div class="card"><div class="name">${icon} ${esc(title)}</div>${slot(key, "one hand")}${slot(key + "_x2", "both hands")}</div>`;
+  }).join("");
+  $("readymade").innerHTML = `<div class="row" style="margin-bottom:12px">
+      <button data-action="toggle-ready">${showAll ? "only show the ones i set up" : "show all " + S.ready_made.length}</button>
+      <span class="muted">${used.length ? used.length + " set up" : "none set up yet"}</span>
+    </div>${readyCards}`;
+
+  const report = S.needs_training ? null : S.report;
+  const pct = (x) => Math.round(x * 100) + "%";
+  const scoreLine = (name) => {
+    // how it did on the fair test in train.py
+    const r = report && report.gestures[name];
+    if (!r) return "";
+    const mix = Object.entries(r.mixed_up_with).sort((a, b) => b[1] - a[1]).filter(([, v]) => v >= 0.02);
+    const mixText = mix.length ? " · sometimes mistaken for " + mix.map(([o, v]) => `${esc(o)} (${pct(v)})`).join(", ") : "";
+    const cls = r.accuracy >= 0.9 ? "ok" : "bad";
+    return `<div class="muted"><span class="${cls}">${pct(r.accuracy)} right</span> on the test${mixText}</div>`;
+  };
+
+  $("none").innerHTML = (report ? `<p class="muted" style="margin:0 0 12px">tested on the last 20% of each recording
+      (which it didnt learn from): <b>${pct(report.accuracy)}</b> right overall</p>` : "") + (S.none_samples
+    ? `<div class="card row spread"><div><div class="name">none <span class="muted">(not a gesture)</span></div>
+         <div class="muted">${S.none_samples} samples of random hand stuff, so it doesn't think every hand is a gesture</div>${scoreLine("none")}</div>
+         <button data-record="none"${busy}>record more</button></div>`
+    : `<div class="banner row spread" style="margin-top:0;margin-bottom:12px"><div><b>start here: record "none"</b>
+         <div class="muted">random hand stuff that isn't a gesture: waving, relaxed hand, half fist, whatever. this stops it from seeing gestures everywhere</div></div>
+         <button class="primary" data-record="none"${busy}>record none</button></div>`);
+
+  $("gestures").innerHTML = S.gestures.map((g) => `
+    <div class="card">
+      <div class="row spread">
+        <div><span class="name">${esc(g.name)}</span> <span class="muted">${g.samples} samples</span>${scoreLine(g.name)}</div>
+        <div class="row"><button data-record="${esc(g.name)}"${busy}>record more</button>
+          <button class="danger" data-delete="${esc(g.name)}"${busy}>delete</button></div>
+      </div>
+      ${slot(g.name, "one hand")}
+      ${slot(g.name + "_x2", "both hands")}
+    </div>`).join("") || `<p class="muted">no gestures yet. add one below.</p>`;
+
+  const isVideo = (f) => /\.(mp4|mov|m4v)$/i.test(f);
+  $("images").innerHTML = S.images.concat(S.gifs).map((f) => {
+    const src = "/files/assets/" + encodeURIComponent(f);
+    const media = isVideo(f) ? `<video src="${src}" muted loop autoplay playsinline></video>` : `<img src="${src}" alt="" loading="lazy">`;
+    return `<div class="thumb">${media}${esc(f)}</div>`;
+  }).join("");
+  $("sound-list").innerHTML = S.sound_files.map((f) =>
+    `<div class="row"><button class="icon" data-play-file="${esc(f)}">▶</button>${esc(f)}</div>`).join("");
+}
+
+function render(state) {
+  const wasRunning = S && S.job.running;
+  S = state;
+  renderJob();
+  renderBanner();
+  // only redraw the settings when something changed, so it doesnt close a dropdown you have open
+  const key = JSON.stringify({...S, job: S.job.running, open: [...open]});
+  if (key !== dataKey) { dataKey = key; renderSettings(); }
+  if (S.job.running && !polling) polling = setInterval(() => api("/api/state"), 1000);
+  if (!S.job.running && polling) { clearInterval(polling); polling = null; }
+  if (wasRunning && !S.job.running && S.job.ok && S.job.label === "training") toast("trained! gesture cam will reload it");
+}
+
+// ---------- changes and clicks ----------
+
+function play(file) {
+  if (audio) audio.pause();
+  if (!file) return toast("pick a sound first");
+  audio = new Audio("/files/sounds/" + encodeURIComponent(file));
+  audio.play();
+}
+
+document.addEventListener("input", (e) => {
+  // sliders show their number while you drag. it saves when you let go
+  if (e.target.type === "range") e.target.nextElementSibling.value = e.target.value;
+});
+
+document.addEventListener("change", async (e) => {
+  const el = e.target;
+  if (el.dataset && el.dataset.penField) {
+    const value = el.type === "checkbox" ? el.checked : el.value;
+    if (await api("/api/pen", {field: el.dataset.penField, value})) toast("saved");
+    return;
+  }
+  if (!el.dataset || !el.dataset.field) return;
+  const value = el.type === "checkbox" ? el.checked : el.value;
+  if (await api("/api/set", {key: el.dataset.key, field: el.dataset.field, value})) toast("saved");
+});
+
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.toggle) {
+    open.has(b.dataset.toggle) ? open.delete(b.dataset.toggle) : open.add(b.dataset.toggle);
+    render(S);
+  }
+  else if (b.dataset.try) {
+    if (await api("/api/test", {key: b.dataset.try})) toast("sent to gesture cam (it has to be running to see it)");
+  }
+  else if (b.dataset.reset) {
+    if (confirm("put this gesture back how it started?")) api("/api/reset", {key: b.dataset.reset});
+  }
+  else if (b.dataset.record) api("/api/record", {name: b.dataset.record});
+  else if (b.dataset.delete) {
+    if (confirm(`delete "${b.dataset.delete}"? the recording gets moved to data/deleted/ in case you want it back`))
+      api("/api/delete", {name: b.dataset.delete});
+  }
+  else if (b.dataset.playKey !== undefined) { e.preventDefault(); play(S.effects[b.dataset.playKey].sound); }
+  else if (b.dataset.playFile) play(b.dataset.playFile);
+  else if (b.dataset.action === "train") api("/api/train", {});
+  else if (b.dataset.action === "toggle-ready") {
+    open.has("__ready") ? open.delete("__ready") : open.add("__ready");
+    render(S);
+  }
+  else if (b.dataset.action === "clear-pen") {
+    if (await api("/api/clear_pen", {})) toast("cleared (gesture cam has to be running)");
+  }
+  else if (b.dataset.action === "stop") api("/api/stop", {});
+  else if (b.dataset.action === "close-job") $("job").innerHTML = "";
+});
+
+$("add").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = $("new-name").value.trim().toLowerCase().replace(/\s+/g, "_");
+  if (!name) return toast("type a name first", true);
+  if (S.gestures.some((g) => g.name === name)) return toast(`you already have "${name}". use record more on it`, true);
+  if (await api("/api/record", {name})) $("new-name").value = "";
+});
+
+// ---------- uploads ----------
+
+async function upload(files) {
+  for (const f of files) {
+    const form = new FormData();
+    form.append("file", f);
+    if (await api("/api/upload", form, true)) toast("added " + f.name);
+  }
+}
+$("file").addEventListener("change", (e) => { e.stopPropagation(); upload(e.target.files); e.target.value = ""; });
+const drop = $("drop");
+drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); upload(e.dataTransfer.files); });
+
+api("/api/state");
+</script>
+</body>
+</html>

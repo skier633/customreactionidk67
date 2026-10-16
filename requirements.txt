@@ -1,0 +1,10 @@
+# mediapipe changes its api between versions, so these are the exact versions this was tested with
+# (mediapipe also installs opencv for you, as opencv-contrib-python)
+mediapipe==1.1.1
+numpy==2.5.4
+pillow==12.3.0
+scikit-learn==1.9.1
+joblib==1.6.0
+sounddevice==0.5.6
+pyvirtualcam==0.15.0
+flask==3.1.3
