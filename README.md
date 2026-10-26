@@ -1,6 +1,6 @@
 # gesture-cam
 
-hand gesture effects for video calls. works with facetime, zoom, discord, google meet, anything that lets you pick a camera
+hand gesture effects for video calls. works with anything that lets you pick a camera
 
 ## setup
 
