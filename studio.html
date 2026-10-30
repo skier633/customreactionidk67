@@ -31,34 +31,11 @@
   .connection::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
   .connection.connected { color: var(--accent); }
   .connection.error { color: var(--bad); }
-  .hero { padding: 54px 0 38px; display: grid; grid-template-columns: 1.25fr 1fr; gap: 40px; align-items: center; }
-  .eyebrow { font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin: 0 0 16px; }
-  h1 { font-size: clamp(38px, 5.5vw, 66px); line-height: 1.04; letter-spacing: -.06em; font-weight: 550; margin: 0 0 22px; }
-  h1 span { color: var(--accent); }
-  .sub { color: var(--muted); margin: 0; max-width: 440px; font-size: 15px; line-height: 1.7; }
-  .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; margin-top: 24px; }
-  .action-link { display: inline-block; border-radius: 8px; background: var(--accent); color: var(--accent-text); padding: 10px 17px; font-size: 13px; font-weight: 650; }
-  .action-link:hover { background: #d8ffa0; color: var(--accent-text); }
-  .hero-note { font-size: 12px; color: var(--muted); }
-  .motion-art { position: relative; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: #171d15; aspect-ratio: 1.42; }
-  .motion-art svg { width: 100%; height: 100%; display: block; }
-  .art-label { position: absolute; left: 20px; bottom: 16px; font: 10px ui-monospace, Menlo, monospace; text-transform: uppercase; letter-spacing: .12em; color: #b8c9a6; }
-  .art-label span { color: #c6f17b; margin-right: 8px; }
   .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 40px 0 18px; }
   h2 { font-size: 22px; letter-spacing: -.6px; font-weight: 550; margin: 0; }
   .section-heading p { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
   .section-number { color: var(--accent); font: 11px ui-monospace, Menlo, monospace; letter-spacing: .1em; margin-right: 9px; }
   .section-tag { flex-shrink: 0; color: var(--muted); font: 10px ui-monospace, Menlo, monospace; text-transform: uppercase; letter-spacing: .08em; }
-  .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  .preset { display: flex; text-align: left; align-items: start; gap: 15px; padding: 22px; border-radius: 12px; background: var(--card); }
-  .preset:hover:not(:disabled) { background: #242e1f; border-color: #71835b; }
-  .preset-symbol { width: 36px; height: 36px; flex-shrink: 0; display: grid; place-items: center; background: #303d22; color: var(--accent); border-radius: 10px; font-size: 22px; }
-  .preset:nth-child(2) .preset-symbol { color: #c6d2ff; background: #2e3346; }
-  .preset:nth-child(3) .preset-symbol { color: #ffbd96; background: #433126; }
-  .preset strong { display: block; font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-  .preset small { display: block; color: var(--muted); font-size: 12px; line-height: 1.6; }
-  .preset-arrow { margin-left: auto; color: var(--muted); }
-  .preset-note { color: var(--muted); font-size: 12px; margin: 12px 0 0; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 22px; margin-bottom: 12px; }
   .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .spread { justify-content: space-between; }
@@ -130,94 +107,79 @@
            padding: 11px 18px; border: 1px solid #d4ff92; border-radius: 9px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100vw - 32px); box-shadow: 0 8px 32px #0006; z-index: 10; }
   #toast.show { opacity: 1; }
   #toast.error { background: #502820; border-color: #ae6c5c; color: #fff; }
-  @media (max-width: 900px) { .groups { grid-template-columns: 1fr 1fr; } nav { gap: 15px; } .preset { padding: 16px; gap: 10px; } .preset-arrow { display: none; } }
-  @media (max-width: 700px) { main { padding: 0 20px 40px; } .topbar { min-height: 78px; flex-wrap: wrap; gap: 10px; padding: 18px 0; } nav { order: 3; width: 100%; } .hero { padding: 34px 0 10px; grid-template-columns: 1fr; gap: 28px; } .motion-art { display: none; } .presets { grid-template-columns: 1fr; } .preset { padding: 18px; } .preset-arrow { display: inline; } .section-heading { margin-top: 32px; } .section-tag { display: none; } .card { padding: 18px; } }
+  @media (max-width: 900px) { .groups { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 700px) { main { padding: 0 20px 40px; } .topbar { min-height:78px; gap:10px; } .section-heading { margin-top:32px; } .card { padding:18px; } }
   @media (max-width: 520px) { .groups { grid-template-columns: 1fr; } .slot-head { flex-wrap: wrap; gap: 10px; } .chips { flex-basis: calc(100% - 130px); } .slot-head > button { flex: 1; } .section-heading { align-items: start; } .brand small { display: none; } .connection { font-size: 10px; } .footer-note { margin-left: 0; width: 100%; } }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
+  main { max-width: 1440px; }
+  .workspace { display:grid; grid-template-columns:minmax(0, 1.1fr) minmax(0, 1fr); gap:32px; }
+  .workspace > section { min-width:0; }
+  h1 { font-size:22px; font-weight:550; letter-spacing:-.6px; margin:0; }
+  .camera-view { position:relative; aspect-ratio:16/9; background:#080b08; border:1px solid var(--line); border-radius:10px; display:grid; place-items:center; overflow:hidden; }
+  .camera-view img { width:100%; height:100%; object-fit:contain; }
+  #camera-empty { padding:28px; text-align:center; color:var(--muted); font-size:13px; }
+  .compact-panel { border-top:1px solid var(--line); padding:16px 0; margin-top:16px; }
+  summary { cursor:pointer; font-size:13px; color:var(--muted); }
+  details[open] > summary { margin-bottom:16px; color:var(--text); }
+  .workspace .groups { grid-template-columns:1fr; }
+  .reaction-choice { display:flex; gap:12px; align-items:center; margin-top:16px; font-size:13px; }
+  .slot-title { display:none; }
+  .slot-head { flex-wrap:wrap; }
+  @media(max-width:900px) { .workspace { grid-template-columns:1fr; gap:8px; } }
 </style>
 </head>
 <body>
-<a class="skip-link" href="#presets">Skip to controls</a>
+<a class="skip-link" href="#custom">Skip to motions</a>
 <main>
   <header class="topbar">
-    <a class="brand" href="#" aria-label="Gesture Cam Studio home"><span class="brand-mark" aria-hidden="true">⌁</span>gesture cam <small>Studio</small></a>
-    <nav aria-label="Studio sections"><a href="#reactions">Reactions</a><a href="#drawing">Air pen</a><a href="#custom">Custom gestures</a><a href="#media">Media</a></nav>
+    <a class="brand" href="#">gesture cam</a>
     <span id="connection" class="connection" role="status">Connecting to Studio</span>
   </header>
-  <section class="hero" aria-labelledby="studio-title">
-    <div>
-      <p class="eyebrow">Your hands. A little more expressive.</p>
-      <h1 id="studio-title">Make your<br>next <span>move.</span></h1>
-      <p class="sub">Teach a wave, a swipe, or your own signature motion. Gesture Cam learns the whole movement, from start to finish.</p>
-      <div class="hero-actions"><a class="action-link" href="#custom">Teach your first motion ↗</a><span class="hero-note">Settings save automatically</span></div>
-    </div>
-    <div class="motion-art" aria-hidden="true">
-      <svg viewBox="0 0 480 340" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#35432d"/></pattern><linearGradient id="trail" x1="75" y1="260" x2="360" y2="100" gradientUnits="userSpaceOnUse"><stop stop-color="#c6f17b" stop-opacity=".1"/><stop offset="1" stop-color="#c6f17b"/></linearGradient></defs>
-        <rect width="480" height="340" fill="url(#grid)"/>
-        <circle cx="251" cy="177" r="120" stroke="#35432d" stroke-dasharray="3 8"/>
-        <path d="M65 256C108 170 199 312 193 230C184 126 285 286 286 203C286 132 365 180 352 93" stroke="#c6f17b" stroke-opacity=".07" stroke-width="25" stroke-linecap="round"/>
-        <path d="M65 256C108 170 199 312 193 230C184 126 285 286 286 203C286 132 365 180 352 93" stroke="url(#trail)" stroke-width="4" stroke-linecap="round"/>
-        <path d="M215 275L191 224L156 188L145 163L151 150L168 157L202 190L203 138L206 97L210 68L220 61L230 72L230 103L229 145L235 166L252 122L273 84L283 78L294 83L295 96L279 131L262 176L279 165L299 151L310 155L310 169L293 188L282 210L292 203L310 184L323 184L330 195L315 218L298 254L260 283Z" fill="#23311d" fill-opacity=".94" stroke="#6f8957" stroke-width="1.5" stroke-linejoin="round"/>
-        <path d="M235 263L202 218L164 174M235 263L219 189L218 140L219 103L219 77M235 263L243 199L260 156L278 117L286 92M235 263L264 218L280 191L299 163M235 263L280 240L302 213L319 195" stroke="#a4c67c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <g fill="#c6f17b"><circle cx="235" cy="263" r="4"/><circle cx="202" cy="218" r="3"/><circle cx="164" cy="174" r="4"/><circle cx="219" cy="189" r="3"/><circle cx="218" cy="140" r="3"/><circle cx="219" cy="103" r="3"/><circle cx="219" cy="77" r="4"/><circle cx="243" cy="199" r="3"/><circle cx="260" cy="156" r="3"/><circle cx="278" cy="117" r="3"/><circle cx="286" cy="92" r="4"/><circle cx="264" cy="218" r="3"/><circle cx="280" cy="191" r="3"/><circle cx="299" cy="163" r="4"/><circle cx="280" cy="240" r="3"/><circle cx="302" cy="213" r="3"/><circle cx="319" cy="195" r="4"/><circle cx="352" cy="93" r="5"/></g>
-        <path d="M28 53V28H53M427 28H452V53M452 287V312H427M53 312H28V287" stroke="#62794d"/>
-        <text x="28" y="79" fill="#839575" font-size="9" font-family="monospace" letter-spacing="2">MOTION / EXPRESSION</text>
-      </svg>
-      <div class="art-label"><span>↗</span> A gesture becomes a canvas</div>
-    </div>
-  </section>
-
-  <section id="presets" aria-labelledby="presets-title">
-    <div class="section-heading"><div><h2 id="presets-title"><span class="section-number">01</span>Start with a mood</h2><p>A few ready-to-go reactions. Make them your own below.</p></div><span class="section-tag">No uploads needed</span></div>
-    <div class="presets">
-      <button class="preset" data-preset="celebrate" disabled><span class="preset-symbol" aria-hidden="true">✳</span><span><strong>Celebrate</strong><small>Big wins. Good news.<br>Give the moment some sparkle.</small></span><span class="preset-arrow" aria-hidden="true">↗</span></button>
-      <button class="preset" data-preset="present" disabled><span class="preset-symbol" aria-hidden="true">↗</span><span><strong>Present</strong><small>Keep everyone with you.<br>Clear cues for your next idea.</small></span><span class="preset-arrow" aria-hidden="true">↗</span></button>
-      <button class="preset" data-preset="play" disabled><span class="preset-symbol" aria-hidden="true">⌁</span><span><strong>Play</strong><small>A little unexpected.<br>Give your call a different look.</small></span><span class="preset-arrow" aria-hidden="true">↗</span></button>
-    </div>
-    <p class="preset-note">Presets only fill gestures you haven’t configured. Your existing reactions stay yours.</p>
-  </section>
-
-  <div id="banner"></div>
-  <div id="job" aria-live="polite"></div>
-
-  <section id="reactions" aria-labelledby="reactions-title">
-    <div class="section-heading"><div><h2 id="reactions-title"><span class="section-number">02</span>Your reactions</h2><p>Pose shortcuts pause only for the hand performing a motion. Use “Try it” to preview any effect.</p></div><span class="section-tag" id="reaction-count">7 optional pose shortcuts</span></div>
-    <div id="readymade"><div class="card muted">Loading your reactions…</div></div>
-  </section>
-
-  <section id="drawing" aria-labelledby="drawing-title">
-    <div class="section-heading"><div><h2 id="drawing-title"><span class="section-number">03</span>Leave your mark</h2><p>Your fingertip is a pen. The whole frame is your canvas.</p></div><span class="section-tag">Air pen</span></div>
-    <div id="pen"><div class="card muted">Loading pen settings…</div></div>
-  </section>
-
-  <section id="custom" aria-labelledby="custom-title">
-    <div class="section-heading"><div><h2 id="custom-title"><span class="section-number">04</span>Teach a movement</h2><p>Record a signature move, then choose what happens when you make it.</p></div><span class="section-tag">Custom gestures</span></div>
-    <div id="none"></div>
-    <div id="gestures"></div>
-    <div class="card">
-      <label for="new-name" class="name" style="display:block;margin-bottom:10px">Add a gesture</label>
-      <form id="add" class="row">
-        <input type="text" id="new-name" placeholder="Name your move, e.g. circle or swipe" autocomplete="off" required>
-        <button class="primary" type="submit" id="record-button" disabled>Record gesture ↗</button>
-      </form>
-      <p class="muted" style="margin:12px 0 0">Use one hand. Rest, perform the whole motion, then pause for half a second. Repeat 8–12 times at different speeds. Press Q to save. Record another session with different lighting for stronger validation.</p>
-    </div>
-  </section>
-
-  <section id="media" aria-labelledby="media-title">
-    <div class="section-heading"><div><h2 id="media-title"><span class="section-number">05</span>Bring your own flavor</h2><p>Add a picture, a loop, or a perfectly timed sound.</p></div><span class="section-tag">Media library</span></div>
-    <div class="card">
-      <label class="drop" id="drop" tabindex="0" role="button" aria-label="Choose pictures, videos, or sounds to upload">
-        <input type="file" id="file" multiple accept=".png,.jpg,.jpeg,.gif,.mp4,.mov,.m4v,.wav,.mp3,.m4a" hidden>
-        <strong>Drop something good here, or browse files ↗</strong>
-        <small>PNG, JPG, GIF · MP4, MOV, M4V · WAV, MP3, M4A</small>
-      </label>
-      <div class="thumbs" id="images"></div>
-      <div class="sounds" id="sound-list"></div>
-    </div>
-  </section>
-  <footer class="shortcut-bar"><span>In the camera window</span><span><kbd>C</kbd> Clear ink</span><span><kbd>P</kbd> Toggle pen</span><span><kbd>D</kbd> Tracking view</span><span><kbd>H</kbd> Preview controls</span><span><kbd>Q</kbd> Quit</span><span class="footer-note">Made for a more expressive everyday.</span></footer>
+  <div class="workspace">
+    <section aria-labelledby="preview-title">
+      <div class="section-heading"><h1 id="preview-title">Camera</h1><span class="muted">Local preview</span></div>
+      <div class="camera-view"><img id="camera-image" alt="Live camera with your reactions" hidden>
+        <div id="camera-empty">Start the camera to try your motions.</div></div>
+      <div class="row" style="margin-top:12px">
+        <button class="primary" id="start-camera">Start camera</button>
+        <button id="stop-camera" disabled>Stop</button>
+        <span id="camera-status" class="muted" role="status">Camera off</span>
+      </div>
+      <details class="compact-panel"><summary>Camera settings &amp; help</summary>
+        <label class="field"><span>Camera</span><select id="camera-number" aria-label="Camera index">
+          <option value="0">0 — default</option><option value="1">1</option><option value="2">2</option><option value="3">3</option>
+        </select></label>
+        <p class="muted">If the wrong camera opens, stop it and try another number. Allow camera access in your system settings. Close other camera apps if the preview cannot start.</p>
+        <p class="muted">Models download on first use. The camera window also shows startup errors in the terminal. Select OBS Virtual Camera in your call to share the output.</p>
+      </details>
+      <details class="compact-panel"><summary>Air pen <span id="pen-state" class="muted"></span></summary><div id="pen"></div></details>
+    </section>
+    <section id="custom" aria-labelledby="custom-title">
+      <div class="section-heading"><h2 id="custom-title">Your motions</h2></div>
+      <p class="muted">Teach a movement. Choose its reaction. Try it on camera.</p>
+      <div class="card">
+        <form id="add" class="row">
+          <input type="text" id="new-name" aria-label="Motion name" placeholder="Name a motion, e.g. swipe" autocomplete="off" required>
+          <button class="primary" type="submit" id="record-button" disabled>Record motion</button>
+        </form>
+        <p class="muted" style="margin:12px 0 0">Use one hand. Rest, make the motion, then pause. Repeat 8–12 times. Press Q in the recording window to save. Start the camera again when you’re done.</p>
+      </div>
+      <div id="none"></div>
+      <div id="banner"></div>
+      <div id="job" aria-live="polite"></div>
+      <div id="gestures"></div>
+    </section>
+  </div>
+  <details class="compact-panel"><summary>Media files</summary>
+    <p class="muted">Add a file to use it as a motion’s reaction.</p>
+    <label class="drop" id="drop" tabindex="0" role="button" aria-label="Upload media">
+      <input type="file" id="file" multiple accept=".png,.jpg,.jpeg,.gif,.mp4,.mov,.m4v,.wav,.mp3,.m4a" hidden>
+      <strong>Choose files or drop them here</strong><small>Pictures, GIFs, videos, and sounds</small>
+    </label><div class="thumbs" id="images"></div><div class="sounds" id="sound-list"></div>
+  </details>
+  <details class="compact-panel"><summary>Existing pose shortcuts <span id="reaction-count" class="muted"></span></summary>
+    <p class="muted">Optional held-pose reactions. Your existing settings are kept here.</p><div id="readymade"></div>
+  </details>
 </main>
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -245,6 +207,7 @@ function toast(msg, isError) {
 }
 
 async function api(path, body, isForm) {
+  if (path === "/api/record") body = {...body, camera: Number($("camera-number").value)};
   const opts = body === undefined ? {} : {
     method: "POST",
     body: isForm ? body : JSON.stringify(body),
@@ -337,6 +300,20 @@ function editor(key) {
   </div>`;
 }
 
+function reactionChoice(key) {
+  const c = S.effects[key];
+  const fields = ["picture", "gif", "sound", "particles", "filter", "distortion", "text", "shake"];
+  const active = fields.filter(field => c[field]);
+  let current = active.length === 1 ? JSON.stringify([active[0], c[active[0]]]) : active.length ? "custom" : "";
+  const choices = [["", "No reaction"], ["custom", "Custom — use Advanced"]];
+  for (const [field, list] of [["particles", pairs(S.options.particles)], ["filter", pairs(S.options.filter)],
+      ["picture", S.images.map(x => [x,x])], ["gif", S.gifs.map(x => [x,x])], ["sound", S.sound_files.map(x => [x,x])]]) {
+    for (const [value, label] of list) choices.push([JSON.stringify([field,value]), label]);
+  }
+  if (!choices.some(([value]) => value === current)) current = "custom";
+  return `<label class="reaction-choice">Reaction<select data-reaction="${esc(key)}">${options(choices, current)}</select></label>`;
+}
+
 function summary(key) {
   // little chips that say what the gesture does
   const c = S.effects[key], o = S.options, chips = [];
@@ -363,7 +340,7 @@ function slot(key, title) {
         <input type="checkbox" data-key="${esc(key)}" data-field="enabled"${on ? " checked" : ""} aria-label="Enable ${esc(key.replaceAll('_', ' '))}"><span></span></label>
       <div class="chips">${on ? "" : `<span class="chip off">off</span>`}${summary(key)}</div>
       <button data-try="${esc(key)}" aria-label="Try ${esc(key.replaceAll('_', ' '))}">Try it ↗</button>
-      <button data-toggle="${esc(key)}" aria-expanded="${isOpen}" aria-label="${isOpen ? 'Close' : 'Edit'} ${esc(key.replaceAll('_', ' '))}"${isOpen ? ' class="primary"' : ""}>${isOpen ? "Done" : "Customize"}</button>
+      <button data-toggle="${esc(key)}" aria-expanded="${isOpen}" aria-label="${isOpen ? 'Close' : 'Edit'} ${esc(key.replaceAll('_', ' '))}"${isOpen ? ' class="primary"' : ""}>${isOpen ? "Close advanced" : "Advanced"}</button>
     </div>
     ${isOpen ? editor(key) : ""}
   </div>`;
@@ -409,6 +386,7 @@ function renderSettings() {
 
 
   const p = S.pen;
+  $("pen-state").textContent = p.enabled ? "— on" : "— off";
   $("pen").innerHTML = `<div class="card">
     <div class="row spread"><div><div class="name">Air pen</div>
       <div class="muted">Pinch thumb and index finger to draw; release to lift the pen. With the curled grip, keep your other fingers tucked in.</div></div>
@@ -446,7 +424,7 @@ function renderSettings() {
   }).join("");
   $("readymade").innerHTML = `<div class="row" style="margin-bottom:12px">
       <button data-action="toggle-ready">${showAll ? "Show configured gestures" : "Explore all " + S.ready_made.length + " gestures"}</button>
-      <span class="muted">${used.length ? used.length + " set up" : "Choose a preset above or customize a gesture"}</span>
+      <span class="muted">${used.length ? used.length + " set up" : "Set up a held-pose shortcut"}</span>
     </div>${readyCards}`;
 
   const report = S.needs_training ? null : S.report;
@@ -476,9 +454,9 @@ function renderSettings() {
         <div class="row"><button data-record="${esc(g.name)}"${busy}>record more</button>
           <button class="danger" data-delete="${esc(g.name)}"${busy}>delete</button></div>
       </div>
-      ${slot(g.name, "one hand")}
+      ${reactionChoice(g.name)}${slot(g.name, "")}
       ${(S.motion_names || []).includes(g.name) ? "" : slot(g.name + "_x2", "both hands")}
-    </div>`).join("") || `<p class="muted">Your built-in reactions are ready whenever you are. Add a custom gesture below to go further.</p>`;
+    </div>`).join("") || `<p class="muted">No motions yet. Record your first movement above.</p>`;
 
   const isVideo = (f) => /\.(mp4|mov|m4v)$/i.test(f);
   $("images").innerHTML = S.images.concat(S.gifs).map((f) => {
@@ -492,8 +470,9 @@ function renderSettings() {
 
 function render(state) {
   const wasRunning = S && S.job.running;
+  if (state.job.running && state.job.label?.startsWith("recording")) cameraOff();
   S = state;
-  document.querySelectorAll("[data-preset]").forEach((button) => { button.disabled = false; });
+
   $("record-button").disabled = S.job.running;
   renderJob();
   renderBanner();
@@ -502,7 +481,9 @@ function render(state) {
   if (key !== dataKey) {
     // Preserve keyboard position when autosave replaces a control's markup.
     const active = document.activeElement;
-    const selector = active?.dataset.penField
+    const selector = active?.dataset.reaction
+      ? `[data-reaction="${CSS.escape(active.dataset.reaction)}"]`
+      : active?.dataset.penField
       ? `[data-pen-field="${CSS.escape(active.dataset.penField)}"]`
       : active?.dataset.field
         ? `[data-key="${CSS.escape(active.dataset.key)}"][data-field="${CSS.escape(active.dataset.field)}"]`
@@ -538,6 +519,12 @@ document.addEventListener("input", (e) => {
 
 document.addEventListener("change", async (e) => {
   const el = e.target;
+  if (el.dataset.reaction) {
+    if (el.value === "custom") { open.add(el.dataset.reaction); render(S); return; }
+    const [field, value] = el.value ? JSON.parse(el.value) : ["", ""];
+    if (await api("/api/reaction", {key: el.dataset.reaction, field, value})) toast("Reaction saved");
+    return;
+  }
   if (el.dataset && el.dataset.penField) {
     const value = el.type === "checkbox" ? el.checked : el.value;
     if (await api("/api/pen", {field: el.dataset.penField, value})) toast("Changes saved");
@@ -551,23 +538,12 @@ document.addEventListener("change", async (e) => {
 document.addEventListener("click", async (e) => {
   const b = e.target.closest("button");
   if (!b) return;
-  if (b.dataset.preset) {
-    document.querySelectorAll("[data-preset]").forEach((button) => { button.disabled = true; });
-    const result = await api("/api/preset", {name: b.dataset.preset});
-    document.querySelectorAll("[data-preset]").forEach((button) => { button.disabled = !S; });
-    if (result) {
-      open.delete("__ready");
-      render(result);
-      toast("Preset applied. Your existing reactions were kept.");
-      $("reactions").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth"});
-    }
-  }
-  else if (b.dataset.toggle) {
+  if (b.dataset.toggle) {
     open.has(b.dataset.toggle) ? open.delete(b.dataset.toggle) : open.add(b.dataset.toggle);
     render(S);
   }
   else if (b.dataset.try) {
-    if (await api("/api/test", {key: b.dataset.try})) toast("Preview sent. Check the running camera window.");
+    if (await api("/api/test", {key: b.dataset.try})) toast("Reaction sent. Check the camera preview.");
   }
   else if (b.dataset.reset) {
     if (confirm("put this gesture back how it started?")) api("/api/reset", {key: b.dataset.reset});
@@ -617,6 +593,36 @@ drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.ad
 drop.addEventListener("dragleave", () => drop.classList.remove("over"));
 drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); upload(e.dataTransfer.files); });
 
+let previewTimer = null;
+let cameraOn = false;
+function cameraOff() {
+  cameraOn = false; clearTimeout(previewTimer);
+  $("camera-image").hidden = true; $("camera-image").removeAttribute("src");
+  $("camera-empty").hidden = false; $("stop-camera").disabled = true;
+  $("start-camera").disabled = false; $("camera-status").textContent = "Camera off";
+}
+function nextFrame() {
+  if (cameraOn) previewTimer = setTimeout(() => { $("camera-image").src = "/api/preview?t=" + Date.now(); }, 200);
+}
+$("camera-image").onload = () => {
+  if (!cameraOn) return;
+  $("camera-image").hidden = false; $("camera-empty").hidden = true;
+  $("camera-status").textContent = "Camera running"; nextFrame();
+};
+$("camera-image").onerror = () => {
+  if (!cameraOn) return;
+  $("camera-image").hidden = true; $("camera-empty").hidden = false;
+  $("camera-status").textContent = "Starting camera… Check the terminal if it stays here.";
+  nextFrame();
+};
+$("start-camera").onclick = async () => {
+  $("start-camera").disabled = true;
+  const result = await api("/api/camera", {action:"start", camera:Number($("camera-number").value)});
+  if (!result) { cameraOff(); return; }
+  cameraOn = true; $("stop-camera").disabled = false;
+  $("camera-status").textContent = "Starting camera…"; nextFrame();
+};
+$("stop-camera").onclick = async () => { if (await api("/api/camera", {action:"stop"})) cameraOff(); };
 api("/api/state");
 </script>
 </body>

@@ -9,7 +9,7 @@ from tracking import make_hand_tracker, find_hands
 from motion import Segmenter
 
 
-def main(name):
+def main(name, camera_number=0):
     os.makedirs('data', exist_ok=True)
     path = 'data/' + name + '.motion.npz'
     clips, sessions = [], []
@@ -19,7 +19,7 @@ def main(name):
     initial = len(clips)
     session = uuid.uuid4().hex
     segmenter = Segmenter()
-    cap, tracker = cv2.VideoCapture(0), make_hand_tracker()
+    cap, tracker = cv2.VideoCapture(camera_number), make_hand_tracker()
     start, last_ms = time.monotonic(), -1
     print('One hand only. Rest, perform the full motion, then pause. Repeat 8–12 times. Q saves.')
     try:
@@ -58,4 +58,9 @@ def main(name):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1])
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("name")
+    parser.add_argument("--camera", type=int, default=0)
+    args = parser.parse_args()
+    main(args.name, args.camera)

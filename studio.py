@@ -5,6 +5,9 @@
 # you can leave gesture_cam.py running while you use this. it picks up the changes by itself
 # under the hood this just runs record.py and train.py for you and edits settings.json
 
+import atexit
+import urllib.request
+import urllib.error
 import glob
 import json
 import os
@@ -16,7 +19,7 @@ import threading
 import webbrowser
 
 import numpy as np
-from flask import Flask, abort, jsonify, request, send_from_directory
+from flask import Response, Flask, abort, jsonify, request, send_from_directory
 from werkzeug.utils import secure_filename
 
 import settings
@@ -31,6 +34,9 @@ NAME_OK = re.compile(r"^[a-z0-9_]{1,30}$")
 
 app = Flask(__name__)
 job = {"label": None, "proc": None, "output": ""}  # the record.py / train.py thats running
+camera_process = None
+camera_number = 0
+
 model_cache = {"time": None, "classes": []}
 
 
@@ -259,12 +265,18 @@ def state():
 
 @app.post("/api/record")
 def record():
+    global camera_number
+    selected_camera = (request.json or {}).get("camera", camera_number)
+    if type(selected_camera) is not int or not 0 <= selected_camera <= 9:
+        abort(400, "Camera must be an index from 0 to 9")
     name = (request.json or {}).get("name", "").strip().lower()
     if name != "none":
         check_name(name)
     if job_running():
         abort(409, "wait for the other thing to finish first")
-    start_job("recording " + name, ["record.py", name], then=train_after_recording)
+    camera_number = selected_camera
+    stop_camera()  # Recording owns the camera until Q saves the examples.
+    start_job("recording " + name, ["record.py", name, "--camera", str(camera_number)], then=train_after_recording)
     return state()
 
 
@@ -298,6 +310,27 @@ def set_value():
     return state()
 
 
+@app.post("/api/reaction")
+def set_reaction():
+    body = request.get_json(silent=True) or {}
+    key = body.get("key", "")
+    check_gesture_key(key)
+    field, value = body.get("field", ""), body.get("value", "")
+    if field not in ("", "picture", "gif", "sound", "particles", "filter"):
+        abort(400, "Unknown reaction")
+    if field:
+        value = clean_value(field, value)
+    config = settings.load()
+    cfg = config["gestures"].get(key, settings.effect({}))
+    for effect_field in ("picture", "gif", "sound", "particles", "filter", "distortion", "text", "shake"):
+        cfg[effect_field] = settings.EFFECT_DEFAULTS[effect_field]
+    if field:
+        cfg[field] = value
+    config["gestures"][key] = cfg
+    settings.save(config)
+    return state()
+
+
 @app.post("/api/reset")
 def reset():
     # puts a gesture back how it started (does nothing)
@@ -309,19 +342,53 @@ def reset():
     return state()
 
 
-@app.post("/api/preset")
-def apply_preset():
-    name = (request.get_json(silent=True) or {}).get("name")
-    if not isinstance(name, str) or name not in settings.PRESETS:
-        abort(400, "unknown preset")
-    config = settings.load()
-    for key, value in settings.PRESETS[name].items():
-        current = config["gestures"].get(key)
-        # An untouched/reset slot is safe to fill. Keep any edits, including disabled slots.
-        if current is None or current == settings.effect({}):
-            config["gestures"][key] = settings.effect(value)
-    settings.save(config)
-    return state()
+def stop_camera():
+    global camera_process
+    if camera_process is not None and camera_process.poll() is None:
+        camera_process.terminate()
+        try:
+            camera_process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            camera_process.kill()
+            camera_process.wait(timeout=3)
+    camera_process = None
+
+
+atexit.register(stop_camera)
+
+
+@app.post("/api/camera")
+def camera_control():
+    global camera_process, camera_number
+    body = request.get_json(silent=True) or {}
+    action = body.get("action")
+    if action == "stop":
+        stop_camera()
+    elif action == "start":
+        number = body.get("camera", 0)
+        if type(number) is not int or not 0 <= number <= 9:
+            abort(400, "Camera must be an index from 0 to 9")
+        if job_running():
+            abort(409, "Finish recording or training before starting the camera")
+        stop_camera()
+        camera_number = number
+        camera_process = subprocess.Popen([sys.executable, "-u", "gesture_cam.py",
+                                            "--camera", str(number), "--studio-preview"])
+    else:
+        abort(400, "Unknown camera action")
+    return jsonify({"running": camera_process is not None and camera_process.poll() is None})
+
+
+@app.get("/api/preview")
+def camera_preview():
+    if camera_process is None or camera_process.poll() is not None:
+        abort(404, "Camera is stopped")
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:5051/frame", timeout=1) as response:
+            data = response.read(2_000_000)
+        return Response(data, mimetype="image/jpeg", headers={"Cache-Control": "no-store"})
+    except (OSError, urllib.error.URLError):
+        return jsonify({"error": "Camera is starting or unavailable"}), 503
 
 
 @app.post("/api/test")

@@ -91,8 +91,8 @@ def read_test_file():
     return name
 
 
-def main():
-    cap = cv2.VideoCapture(CAMERA_NUMBER)
+def main(camera_number=CAMERA_NUMBER, studio_preview=False):
+    cap = cv2.VideoCapture(camera_number)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
     ok, frame = cap.read()
@@ -124,6 +124,10 @@ def main():
             print("couldnt start the virtual camera so its just the preview window for now")
             print("  reason:", e)
 
+    stream = None
+    if studio_preview:
+        from preview_stream import PreviewServer
+        stream = PreviewServer()
     show_debug = SHOW_DEBUG
     show_hud = True
     display_fps = 30.0
@@ -212,6 +216,16 @@ def main():
         if cam is not None:
             cam.send(cv2.cvtColor(out, cv2.COLOR_BGR2RGB))
 
+        if stream is not None:
+            studio_frame = preview.copy()
+            # Small fingertip markers belong only to Studio, never to the call output.
+            for hand in hands:
+                for tip in (4, 8):
+                    x, y = hand["pts"][tip]
+                    cv2.circle(studio_frame, (int(w - 1 - x), int(y)), 3,
+                               (180, 220, 170), 1, cv2.LINE_AA)
+            stream.update(studio_frame)
+
         if show_hud:
             preview_ui.draw(preview, hands, display_fps, config["pen"]["enabled"],
                             cam is not None, gestures.status())
@@ -240,6 +254,8 @@ def main():
             print("air pen", "on" if config["pen"]["enabled"] else "off")
 
     cap.release()
+    if stream is not None:
+        stream.close()
     hand_tracker.close()
     if face_tracker is not None:
         face_tracker.close()
@@ -251,4 +267,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--camera", type=int, default=CAMERA_NUMBER)
+    parser.add_argument("--studio-preview", action="store_true")
+    args = parser.parse_args()
+    main(args.camera, args.studio_preview)

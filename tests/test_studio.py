@@ -82,23 +82,46 @@ def test_switch_a_gesture_off_and_on(client):
     assert s["effects"]["thumbs_up_x2"]["enabled"] is True
 
 
-def test_preset_is_ready_to_use_and_preserves_edits(client):
-    client.post("/api/set", json={"key": "thumbs_up", "field": "text", "value": "My caption"})
-    client.post("/api/set", json={"key": "i_love_you", "field": "enabled", "value": False})
-    result = client.post("/api/preset", json={"name": "celebrate"})
-    assert result.status_code == 200
-    effects = result.get_json()["effects"]
-    assert effects["thumbs_up"]["text"] == "My caption"
-    assert effects["thumbs_up"]["particles"] == ""
-    assert effects["i_love_you"]["enabled"] is False
-    assert effects["victory"]["particles"] == "fireworks"
-    assert effects["victory"]["duration"] == 2.5
-    assert client.post("/api/preset", json={"name": "celebrate"}).get_json()["effects"] == effects
+def test_single_reaction_replaces_effects_and_preserves_timing(client):
+    client.post("/api/set", json={"key":"wave", "field":"text", "value":"Old caption"})
+    client.post("/api/set", json={"key":"wave", "field":"motion_early", "value":True})
+    result = client.post("/api/reaction", json={"key":"wave", "field":"particles", "value":"confetti"})
+    effect = result.get_json()["effects"]["wave"]
+    assert effect["particles"] == "confetti" and effect["text"] == ""
+    assert effect["motion_early"] is True
+    assert client.post("/api/reaction", json={"key":"wave", "field":"bad"}).status_code == 400
 
 
-def test_preset_fills_reset_slots_and_rejects_unknown_names(client):
-    client.post("/api/reset", json={"key": "thumbs_up"})
-    effects = client.post("/api/preset", json={"name": "present"}).get_json()["effects"]
-    assert effects["thumbs_up"]["text"] == "Great question"
-    for name in ["missing", [], None]:
-        assert client.post("/api/preset", json={"name": name}).status_code == 400
+def test_presets_removed_and_camera_validation(client):
+    assert client.post("/api/preset", json={"name":"celebrate"}).status_code == 404
+    assert client.post("/api/camera", json={"action":"start", "camera":-1}).status_code == 400
+    assert client.get("/api/preview").status_code == 404
+
+
+def test_camera_lifecycle(client, monkeypatch):
+    import studio
+    class Process:
+        stopped = False
+        def poll(self): return 0 if self.stopped else None
+        def terminate(self): self.stopped = True
+        def wait(self, timeout): pass
+    process = Process()
+    calls = []
+    def launch(args):
+        calls.append(args)
+        return process
+    monkeypatch.setattr(studio.subprocess, "Popen", launch)
+    assert client.post("/api/camera", json={"action":"start", "camera":2}).get_json()["running"]
+    assert calls[0][-3:] == ["--camera", "2", "--studio-preview"]
+    assert not client.post("/api/camera", json={"action":"stop"}).get_json()["running"]
+    assert process.stopped
+
+
+def test_record_uses_selected_camera_and_releases_preview(client, monkeypatch):
+    import studio
+    calls = []
+    monkeypatch.setattr(studio, 'stop_camera', lambda: calls.append('stop'))
+    monkeypatch.setattr(studio, 'start_job', lambda label, args, **kw: calls.append(args))
+    response = client.post('/api/record', json={'name':'swipe','camera':2})
+    assert response.status_code == 200
+    assert calls == ['stop', ['record.py', 'swipe', '--camera', '2']]

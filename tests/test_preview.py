@@ -1,4 +1,5 @@
 """Preview guides must never leak into the virtual camera output."""
+import pytest
 import sys
 from types import SimpleNamespace
 
@@ -8,7 +9,8 @@ import gesture_cam
 import settings
 
 
-def test_status_display_stays_in_local_preview(monkeypatch, project):
+@pytest.mark.parametrize("studio_preview", [False, True])
+def test_status_display_stays_in_local_preview(monkeypatch, project, studio_preview):
     frame = np.full((540, 960, 3), 100, dtype=np.uint8)
     output, shown = [], []
     camera = SimpleNamespace(read=lambda: (True, frame.copy()), set=lambda *args: None,
@@ -33,7 +35,11 @@ def test_status_display_stays_in_local_preview(monkeypatch, project):
     monkeypatch.setattr(gesture_cam.effects, "draw_text", lambda *args: None)
     monkeypatch.setattr(gesture_cam.sounds, "start_call_mix", lambda *args: None)
     monkeypatch.setattr(gesture_cam.sounds, "stop_call_mix", lambda: None)
-    gesture_cam.main()
+    streamed = []
+    stream = SimpleNamespace(update=lambda frame: streamed.append(frame.copy()), close=lambda: None)
+    monkeypatch.setitem(sys.modules, "preview_stream", SimpleNamespace(PreviewServer=lambda: stream))
+    gesture_cam.main(studio_preview=studio_preview)
+    assert len(streamed) == int(studio_preview)
     assert len(output) == len(shown) == 1
     np.testing.assert_array_equal(output[0], frame)
     assert not np.array_equal(shown[0], frame)
