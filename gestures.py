@@ -175,10 +175,15 @@ def check_trained(hands, now):
     for key in list(state["probs"]):
         if key not in seen:
             del state["probs"][key]
-    if classifier is None or motion_recognizer is not None:
+    if classifier is None:
         state["held"]["trained"] = {}
         return None
-    return held_pose("trained", [guess_pose(hand, now=now) for hand in hands], hands, now)
+    names = [guess_pose(hand, now=now) for hand in hands]
+    if motion_recognizer is not None:
+        # A re-recorded motion owns its name; a legacy pose model must not replay it.
+        motion_names = set(motion_recognizer.model.classes_)
+        names = [name if name not in motion_names else None for name in names]
+    return held_pose("trained", names, hands, now)
 
 
 def check_ready_made(hands, now):
@@ -187,13 +192,15 @@ def check_ready_made(hands, now):
 
 def status():
     """Progress for a preview overlay; does not advance recognition or trigger events."""
+    poses = [{"name": held["name"], "progress": min(1.0, held["duration"] / TRAINED_HOLD),
+              "done": held["done"]}
+             for held in state["held"].values() if held.get("name")]
     if motion_recognizer is not None:
-        active = motion_recognizer.segmenter.active
-        return [{"name": "Move, then pause" if active else "Rest, then make your motion",
-                 "progress": 0, "done": False, "motion": True}]
-    return [{"name": held["name"], "progress": min(1.0, held["duration"] / TRAINED_HOLD),
-             "done": held["done"]}
-            for held in state["held"].values() if held.get("name")]
+        active = any(track["segment"].active for track in motion_recognizer.tracks.values())
+        if active or not poses:
+            return [{"name": "Move, then pause" if active else "Make a motion or hold a pose",
+                     "progress": 0, "done": False, "motion": True}]
+    return poses
 
 
 # ---------- run everything ----------
@@ -201,12 +208,17 @@ def status():
 def detect(hands, now):
     # returns the gestures that just went off, like [{"type": "trained", "name": "peace", "x": .., "y": ..}]
     events = []
-    pose_events = [] if motion_recognizer is not None else [check_trained(hands, now), check_ready_made(hands, now)]
-    for event in pose_events:
-        if event:
-            events.append(event)
+    pose_hands = hands
     if motion_recognizer is not None:
-        event = motion_recognizer.update(hands, now)
+        events.extend(motion_recognizer.update_all(hands, now))
+        busy = motion_recognizer.busy_ids
+        pose_hands = [hand for hand in hands if identity(hand) not in busy]
+        # A partially held pose cannot accumulate time through a motion.
+        for held in state["held"].values():
+            signature = held.get("signature")
+            if signature and signature[1] & busy:
+                held.clear()
+    for event in [check_trained(pose_hands, now), check_ready_made(pose_hands, now)]:
         if event:
             events.append(event)
     return events

@@ -158,7 +158,7 @@ def clean_value(field, value):
             abort(400, field + " has to be a number")
         number = min(max(number, low), high)
         return number if field == "duration" else int(round(number))
-    if field in ("fade", "enabled"):
+    if field in ("fade", "enabled", "motion_early"):
         return bool(value)
     if field == "text":
         return str(value).strip()[:60]

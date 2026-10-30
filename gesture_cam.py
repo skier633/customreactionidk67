@@ -52,6 +52,9 @@ def load_settings():
     # loads settings.json plus everything it points to. runs again whenever it changes
     config = settings.load()
     gestures.load_classifier()
+    if gestures.motion_recognizer is not None:
+        gestures.motion_recognizer.early_names = {name for name, cfg in config["gestures"].items()
+                                                if cfg.get("motion_early", False)}
     pictures = set()
     for cfg in config["gestures"].values():
         pictures.update(name for name in [cfg["picture"], cfg["gif"]] if name)

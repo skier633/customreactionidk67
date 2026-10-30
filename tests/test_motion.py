@@ -116,3 +116,86 @@ def test_motion_studio_lists_examples_and_deletes_correct_file(project):
     assert client.post('/api/set',json={'key':'swipe','field':'text','value':'Hello'}).status_code==200
     assert client.post('/api/delete',json={'name':'swipe'}).status_code==200
     assert (project/'data/deleted/swipe.motion.npz').exists()
+
+
+def trained_example():
+    segment = Segmenter()
+    return next(clip for timestamp, hands in sequence()
+                if (clip := segment.update(hands, timestamp)) is not None)
+
+
+def test_second_hand_does_not_abort_first_hands_motion():
+    model = MotionModel({'swipe': [trained_example()]*4, 'none': [clip('up')]*4})
+    recognizer = MotionRecognizer(model)
+    events = []
+    for index, (timestamp, hands) in enumerate(sequence()):
+        if index >= 25:
+            hands = hands + [hand(600, key=2)]
+        events.extend(recognizer.update_all(hands, timestamp))
+    assert [event['name'] for event in events] == ['swipe']
+    assert events[0]['x'] == 290
+
+
+def test_two_hands_recognize_independent_directions():
+    right = trained_example()
+    left = right.copy()
+    left[:, 0] *= -1
+    model = MotionModel({'right': [right]*4, 'left': [left]*4, 'none': [clip('up')]*4})
+    recognizer = MotionRecognizer(model)
+    events = []
+    for timestamp, hands in sequence():
+        other = hand(800 - hands[0]['pts'][0, 0], key=2)
+        events.extend(recognizer.update_all(hands + [other], timestamp))
+    assert {event['name'] for event in events} == {'right', 'left'}
+
+
+def test_early_firing_is_opt_in_and_never_duplicates_completion():
+    model = MotionModel({'swipe': [trained_example()]*4, 'none': [clip('up')]*4})
+    normal = MotionRecognizer(model)
+    early = MotionRecognizer(model, early_names={'swipe'})
+    normal_events, early_events = [], []
+    for timestamp, hands in sequence():
+        normal_events.extend((timestamp, event) for event in normal.update_all(hands, timestamp))
+        early_events.extend((timestamp, event) for event in early.update_all(hands, timestamp))
+    assert len(normal_events) == len(early_events) == 1
+    assert early_events[0][0] < normal_events[0][0]
+    assert normal_events[0][0] - early_events[0][0] >= 0.15
+
+
+def test_early_match_rejects_a_competing_longer_motion_prefix():
+    short = clip()
+    long = clip()
+    long[:, 0] *= 2
+    model = MotionModel({'short': [short]*4, 'long': [long]*4, 'none': [clip('up')]*4})
+    assert model.predict_one(short) == 'short'
+    assert model.predict_one(short, early=True) is None
+
+
+def test_pose_gestures_still_work_with_a_motion_model():
+    import importlib, gestures
+    gestures = importlib.reload(gestures)
+    gestures.motion_recognizer = MotionRecognizer(MotionModel(
+        {'swipe': [trained_example()]*4, 'none': [clip('up')]*4}))
+    events = []
+    for index in range(40):
+        stationary = hand(100)
+        stationary['ready_made'] = ('Thumb_Up', 0.99)
+        events.extend(gestures.detect([stationary], index/30))
+    assert [event['name'] for event in events] == ['thumbs_up']
+    gestures.motion_recognizer = None
+
+
+def test_moving_hand_blocks_pose_but_not_other_stationary_hand():
+    import importlib, gestures
+    gestures = importlib.reload(gestures)
+    gestures.motion_recognizer = MotionRecognizer(MotionModel(
+        {'swipe': [trained_example()]*4, 'none': [clip('up')]*4}))
+    events = []
+    for index, (timestamp, hands) in enumerate(sequence()[:40]):
+        hands[0]['ready_made'] = ('Victory', 0.99) if index >= 15 else ('None', 0)
+        other = hand(600, key=2)
+        other['ready_made'] = ('Thumb_Up', 0.99)
+        events.extend(gestures.detect(hands + [other], timestamp))
+    assert any(event['name'] == 'thumbs_up' for event in events)
+    assert not any(event['name'] == 'victory' for event in events)
+    gestures.motion_recognizer = None

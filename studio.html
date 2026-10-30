@@ -182,7 +182,7 @@
   <div id="job" aria-live="polite"></div>
 
   <section id="reactions" aria-labelledby="reactions-title">
-    <div class="section-heading"><div><h2 id="reactions-title"><span class="section-number">02</span>Your reactions</h2><p>Pose shortcuts work until a motion model is trained. Use “Try it” to preview any effect.</p></div><span class="section-tag" id="reaction-count">7 optional pose shortcuts</span></div>
+    <div class="section-heading"><div><h2 id="reactions-title"><span class="section-number">02</span>Your reactions</h2><p>Pose shortcuts pause only for the hand performing a motion. Use “Try it” to preview any effect.</p></div><span class="section-tag" id="reaction-count">7 optional pose shortcuts</span></div>
     <div id="readymade"><div class="card muted">Loading your reactions…</div></div>
   </section>
 
@@ -330,6 +330,7 @@ function editor(key) {
       <label>lasts <input type="number" min="0.1" max="10" step="0.1" value="${c.duration}" data-key="${esc(key)}" data-field="duration"> sec</label>
       <label><input type="checkbox" data-key="${esc(key)}" data-field="fade"${c.fade ? " checked" : ""}> fade in/out</label>
       <label>wait <input type="number" min="0" max="30" step="0.5" value="${c.cooldown}" data-key="${esc(key)}" data-field="cooldown"> sec before it can go again</label>
+      ${(S.motion_names || []).includes(key) ? `<label title="Faster response, with more risk of accidental triggers. Test during normal conversation."><input type="checkbox" data-key="${esc(key)}" data-field="motion_early"${c.motion_early ? " checked" : ""}> Early firing (experimental)</label>` : ""}
       <span class="grow"></span>
       <button data-reset="${esc(key)}">reset</button>
     </div>

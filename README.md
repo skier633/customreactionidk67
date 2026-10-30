@@ -88,24 +88,48 @@ A virtual camera carries video only. Gesture Cam can mix your microphone and rea
 
 ## Teach your own motions
 
-Custom recording now learns **complete movements**, not independent hand poses. Try a wave, directional swipe, circle, or changing finger configuration. Use exactly one visible hand. Pause for at least half a second before and after each repetition; a pause ends the motion. Movements should last roughly 0.3–4 seconds. Continuous motion with internal pauses over 0.3 seconds is treated as separate gestures. Two-hand choreography is not supported yet.
+Custom recording now learns **complete movements**, not independent hand poses. Try a wave, directional swipe, circle, or changing finger configuration. Use one visible hand while teaching a motion. During a call, both hands can be visible and perform independent motions. Pause for at least half a second before and after each repetition; a pause ends the motion. Movements should last roughly 0.3–4 seconds. Continuous motion with internal pauses over 0.3 seconds is treated as separate gestures. Two-hand choreography is not supported yet.
 
 1. Open Studio and record `none`: ordinary movements you want ignored. Collect 8–12 varied repetitions, then press **Q** to save.
 2. Name your motion (for example `circle`) and record 8–12 complete repetitions. Vary speed and position. Press **Q** to save; Studio trains automatically when both classes exist.
 3. Assign an effect to the motion. Restart the camera if you stopped it for recording; otherwise the model reloads automatically.
 4. Record another session under different lighting or at another distance, then inspect the validation results. Each class needs at least six repetitions, with at least three in earlier sessions for session-based validation.
 
-Once a motion model is loaded, automatic pose triggers are disabled so intermediate poses cannot fire unrelated reactions. The air pen and manual effect previews still work. Old pose recordings and models are preserved; they cannot be converted into motions because they contain no trajectory or repetition boundaries. The old CLI recorder remains available as `record_pose.py`.
+Pose shortcuts and presets keep working after you teach a motion. Only the hand currently moving has its pose triggers paused; a stationary second hand can still give a thumbs-up. A pose needs a fresh hold after the motion. The air pen and manual effect previews still work. Old pose recordings and models are preserved; they cannot be converted into motions because they contain no trajectory or repetition boundaries. The old CLI recorder remains available as `record_pose.py`.
 
-### Recognition design and honest accuracy
+### Faster effects
 
-The feature sequence combines wrist travel in palm-size units with all 21 world-space hand landmarks relative to the wrist. It retains direction, movement order, and finger-shape changes while removing screen position and much of camera-distance variation. Timestamp resampling produces 32 observations per repetition; banded dynamic time warping aligns local speed differences. This is a small-data template approach informed by [DTW gesture recognition research](https://www.eecs.ucf.edu/isuelab/research/jackknife/), not an implementation of the complete Jackknife algorithm.
+For a flick or quick punchline, open that motion’s effect editor and enable **Early firing (experimental)**. The app can fire before the ending pause when the movement closely matches a complete example. It uses a stricter match and checks whether another motion has a similar beginning. It fires once per movement.
 
-Each class learns an acceptance radius from distances between its examples. Unfamiliar sequences, close competing matches, and background movements are rejected. Hand loss, a second visible hand, identity changes, or long gaps abort the current sequence. Completion triggers once after the ending pause, with a one-second cooldown.
+Early firing is off by default. It can mistake an unfinished movement for a complete one, especially if you have not taught enough background examples. It also needs several observations before deciding; it is not an instant finger-gun rule. Test it during normal conversation before using it on a call.
 
-Training validates on the latest **entire session** when multiple sessions exist, or on held-out **whole repetitions** otherwise. The report labels the split and records background false accepts. Same-session validation is weaker evidence of real-world performance. No webcam accuracy percentage is claimed without your recordings. Improve low scores with varied positives and difficult background negatives; inspect both missed motions and false accepts.
+### How matching works
 
-Motion clips live in `data/*.motion.npz`; the model and report are `models/motions.joblib` and `models/motions_report.json`. These files remain local and ignored by Git. To train from the terminal, use `python train_motion.py`.
+The app compares the path of your wrist and changes in finger shape with your recorded examples. It can stretch the timing to match a slower or faster performance, while keeping the steps in order. Close ties and unfamiliar movements are ignored. The constants and matching steps are explained in [the code walkthrough](docs/motion-matching.md).
+
+Training holds out a whole recording session when available, or separate repetitions otherwise. That score checks recognition of examples; it does **not** measure accidental triggers during a call.
+
+### Test it during a normal conversation
+
+Real-call false triggers per minute: **not measured yet**. To measure your setup, train and configure your motions, then run:
+
+```sh
+python tools/evaluate_background.py --seconds 300
+```
+
+Talk normally for five minutes, with natural hand movements and no intentional commands. All triggers count as false alarms. Stop the regular camera app first if your webcam cannot be shared. Pressing Q ends early and the report marks the shorter session.
+
+The tool plays no effects and saves no video or audio. It saves hand landmarks and a JSON report under the Git-ignored `data/background/` folder. The report includes configured triggers per minute, all recognition candidates, hand visibility, elapsed time, event timestamps, settings, and a model fingerprint. Low hand visibility makes a low false-trigger count less convincing. Zero triggers in five minutes is encouraging, not a guarantee.
+
+Replay the same session after tuning, without opening the camera:
+
+```sh
+python tools/evaluate_background.py --replay data/background/YOUR_SESSION.npz
+```
+
+Keep a separate fresh conversation for your final evaluation; repeatedly tuning against one recording can overfit it. Compare early firing on and off. Do not publish an accuracy or false-trigger rate until you have actually measured it.
+
+Motion clips live in `data/*.motion.npz`; the model and training report live in `models/`. Old pose recordings stay intact. To train from the terminal, use `python train_motion.py`.
 
 ## Local data
 

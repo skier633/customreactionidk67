@@ -15,6 +15,7 @@ READY_MADE = ["thumbs_up", "thumbs_down", "open_palm", "fist", "pointing_up", "v
 
 # everything a gesture can do. "" = off
 EFFECT_DEFAULTS = {
+    "motion_early": False,      # opt-in matching before the ending pause
     "enabled": True,            # False = this gesture is switched off (it does nothing)
     "picture": "",              # png/jpg in assets/
     "picture_where": "full",    # one of PICTURE_WHERE
