@@ -45,7 +45,7 @@ def draw(frame, hands, fps, pen_enabled, virtual_cam, poses):
     pose = max(poses, key=lambda p: p["progress"], default=None)
     if pose:
         label = pose["name"].replace("_x2", " / both hands").replace("_", " ").upper()
-        message = label + ("  /  RELEASE TO REPEAT" if pose["done"] else "  /  HOLD")
+        message = label if pose.get("motion") else label + ("  /  RELEASE TO REPEAT" if pose["done"] else "  /  HOLD")
         progress = float(np.clip(pose["progress"], 0, 1))
     else:
         message = "HOLD A GESTURE TO TRIGGER" if hands else "BRING YOUR HAND INTO VIEW"

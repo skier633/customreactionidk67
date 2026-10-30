@@ -134,6 +134,6 @@ def save(data):
 def stamp():
     # changes whenever the settings or the trained model change
     times = []
-    for path in [PATH, CLASSIFIER_PATH]:
+    for path in [PATH, CLASSIFIER_PATH, "models/motions.joblib"]:
         times.append(os.path.getmtime(path) if os.path.exists(path) else 0)
     return tuple(times)

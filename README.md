@@ -1,6 +1,6 @@
 # Gesture Cam
 
-**Turn a hand gesture into a moment.** Live reactions, glowing air drawings, and custom effects for your webcam and video calls.
+**Teach your camera a movement.** Live reactions, glowing air drawings, and custom effects for your webcam and video calls.
 
 Gesture Cam runs on your computer, with a browser-based Studio for mixing effects. Raise a thumbs-up for confetti, draw a quick explanation in the air, or build a signature reaction of your own.
 
@@ -12,7 +12,7 @@ Gesture Cam runs on your computer, with a browser-based Studio for mixing effect
 - **Draw in the air.** Pinch with your other fingers curled to write. Release to lift the pen. Ink can glow, fade, and stay readable for people on the call.
 - **Make each reaction yours.** Combine particles, captions, images, animated overlays, sounds, distortions, and color filters.
 - **Start with a scene.** Studio's Celebrate, Present, and Play presets fill unused gesture slots without replacing your edits.
-- **Teach a custom gesture.** Record examples in Studio, train, and inspect the held-out accuracy report.
+- **Teach a custom gesture.** Record complete movements in Studio, train, and inspect the held-out accuracy report.
 - **See what the tracker is doing.** The local preview shows hand count, frame rate, and gesture hold progress. Toggle the landmark skeleton to inspect tracking. These guides stay out of the virtual camera feed.
 
 ## Quick start
@@ -86,11 +86,26 @@ A virtual camera carries video only. Gesture Cam can mix your microphone and rea
 3. Select **BlackHole 2ch** as the call's microphone.
 4. If effects are cut off, reduce the call's noise filtering. In FaceTime, use **Control Center → Mic Mode → Standard**.
 
-## Create your own gestures
+## Teach your own motions
 
-In Studio, record **none** first: relaxed hands and ordinary movements that should not trigger reactions. Then add a named gesture and record it with different positions, angles, and distances. Stop Gesture Cam while recording if your camera cannot be shared by two processes.
+Custom recording now learns **complete movements**, not independent hand poses. Try a wave, directional swipe, circle, or changing finger configuration. Use exactly one visible hand. Pause for at least half a second before and after each repetition; a pause ends the motion. Movements should last roughly 0.3–4 seconds. Continuous motion with internal pauses over 0.3 seconds is treated as separate gestures. Two-hand choreography is not supported yet.
 
-Studio trains after recordings when enough classes are available. Its report evaluates the final 20% of each recording separately from the training examples. This is a useful check, not a guarantee under new lighting or for another person. Add more varied recordings when two poses get confused.
+1. Open Studio and record `none`: ordinary movements you want ignored. Collect 8–12 varied repetitions, then press **Q** to save.
+2. Name your motion (for example `circle`) and record 8–12 complete repetitions. Vary speed and position. Press **Q** to save; Studio trains automatically when both classes exist.
+3. Assign an effect to the motion. Restart the camera if you stopped it for recording; otherwise the model reloads automatically.
+4. Record another session under different lighting or at another distance, then inspect the validation results. Each class needs at least six repetitions, with at least three in earlier sessions for session-based validation.
+
+Once a motion model is loaded, automatic pose triggers are disabled so intermediate poses cannot fire unrelated reactions. The air pen and manual effect previews still work. Old pose recordings and models are preserved; they cannot be converted into motions because they contain no trajectory or repetition boundaries. The old CLI recorder remains available as `record_pose.py`.
+
+### Recognition design and honest accuracy
+
+The feature sequence combines wrist travel in palm-size units with all 21 world-space hand landmarks relative to the wrist. It retains direction, movement order, and finger-shape changes while removing screen position and much of camera-distance variation. Timestamp resampling produces 32 observations per repetition; banded dynamic time warping aligns local speed differences. This is a small-data template approach informed by [DTW gesture recognition research](https://www.eecs.ucf.edu/isuelab/research/jackknife/), not an implementation of the complete Jackknife algorithm.
+
+Each class learns an acceptance radius from distances between its examples. Unfamiliar sequences, close competing matches, and background movements are rejected. Hand loss, a second visible hand, identity changes, or long gaps abort the current sequence. Completion triggers once after the ending pause, with a one-second cooldown.
+
+Training validates on the latest **entire session** when multiple sessions exist, or on held-out **whole repetitions** otherwise. The report labels the split and records background false accepts. Same-session validation is weaker evidence of real-world performance. No webcam accuracy percentage is claimed without your recordings. Improve low scores with varied positives and difficult background negatives; inspect both missed motions and false accepts.
+
+Motion clips live in `data/*.motion.npz`; the model and report are `models/motions.joblib` and `models/motions_report.json`. These files remain local and ignored by Git. To train from the terminal, use `python train_motion.py`.
 
 ## Local data
 

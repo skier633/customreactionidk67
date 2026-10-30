@@ -20,6 +20,7 @@ from flask import Flask, abort, jsonify, request, send_from_directory
 from werkzeug.utils import secure_filename
 
 import settings
+import motion
 
 PORT = 5050
 IMAGE_TYPES = (".png", ".jpg", ".jpeg")
@@ -47,12 +48,15 @@ def recorded_gestures():
     for path in sorted(glob.glob("data/*.npy")):
         name = os.path.basename(path)[:-4]
         counts[name] = int(np.load(path, mmap_mode="r").shape[0])
+    for name, path in motion.recordings().items():
+        with np.load(path) as data:
+            counts[name] = len(data["clips"])
     return counts
 
 
 def trained_classes():
     # which gestures the saved model knows about (only reloads it when the file changes)
-    path = settings.CLASSIFIER_PATH
+    path = motion.MODEL_PATH if motion.recordings() else settings.CLASSIFIER_PATH
     if not os.path.exists(path):
         return None
     t = os.path.getmtime(path)
@@ -72,8 +76,10 @@ def needs_training(counts):
         return len(counts) >= 2
     if sorted(counts) != classes:
         return True
-    newest_data = max([os.path.getmtime("data/" + n + ".npy") for n in counts], default=0)
-    return newest_data > os.path.getmtime(settings.CLASSIFIER_PATH)
+    paths = list(motion.recordings().values()) or list(glob.glob("data/*.npy"))
+    newest_data = max([os.path.getmtime(p) for p in paths], default=0)
+    model_path = motion.MODEL_PATH if motion.recordings() else settings.CLASSIFIER_PATH
+    return newest_data > os.path.getmtime(model_path)
 
 
 def job_running():
@@ -106,7 +112,7 @@ def train_after_recording():
     # so you dont have to remember to hit train. needs at least 2 recordings (like "none" + one gesture)
     if len(recorded_gestures()) >= 2:
         job["output"] += "\nnow training...\n"
-        start_job("training", ["train.py"], keep_output=True)
+        start_job("training", ["train_motion.py"] if motion.recordings() else ["train.py"], keep_output=True)
 
 
 def check_name(name):
@@ -187,8 +193,9 @@ def clean_pen_value(field, value):
 
 def training_report():
     # the test results train.py saved, if theyre for the current model
-    path = "models/my_gestures_report.json"
-    if not os.path.exists(path) or not os.path.exists(settings.CLASSIFIER_PATH):
+    path = motion.REPORT_PATH if motion.recordings() else "models/my_gestures_report.json"
+    model_path = motion.MODEL_PATH if motion.recordings() else settings.CLASSIFIER_PATH
+    if not os.path.exists(path) or not os.path.exists(model_path):
         return None
     try:
         with open(path) as f:
@@ -227,6 +234,7 @@ def state():
             effects[key] = config["gestures"].get(key, settings.effect({}))
     return jsonify({
         "ready_made": settings.READY_MADE,
+        "motion_names": sorted(motion.recordings()),
         "pen": config["pen"],
         "pen_clear": settings.PEN_CLEAR,
         "pen_grips": settings.PEN_GRIPS,
@@ -264,7 +272,7 @@ def record():
 def train():
     if job_running():
         abort(409, "wait for the other thing to finish first")
-    start_job("training", ["train.py"])
+    start_job("training", ["train_motion.py"] if motion.recordings() else ["train.py"])
     return state()
 
 
@@ -349,13 +357,13 @@ def delete_gesture():
     name = (request.json or {}).get("name", "")
     if name != "none":
         check_name(name)
-    path = os.path.join("data", name + ".npy")
+    path = str(motion.recordings().get(name, os.path.join("data", name + ".npy")))
     if not os.path.exists(path):
         abort(404, "no gesture called " + name)
     if job_running():
         abort(409, "wait for the other thing to finish first")
     os.makedirs("data/deleted", exist_ok=True)
-    shutil.move(path, os.path.join("data/deleted", name + ".npy"))
+    shutil.move(path, os.path.join("data/deleted", os.path.basename(path)))
     config = settings.load()
     config["gestures"].pop(name, None)
     config["gestures"].pop(name + "_x2", None)

@@ -35,6 +35,7 @@ state = {
 }
 
 classifier = None
+motion_recognizer = None
 
 
 # ---------- helper math ----------
@@ -54,7 +55,15 @@ def finger_bend(world, knuckle):
 # ---------- trained gestures ----------
 
 def load_classifier():
-    global classifier
+    global classifier, motion_recognizer
+    from motion import MODEL_PATH, MotionRecognizer
+    motion_recognizer = None
+    if os.path.exists(MODEL_PATH):
+        import joblib
+        try:
+            motion_recognizer = MotionRecognizer(joblib.load(MODEL_PATH))
+        except Exception as e:
+            print("Could not load motion model:", e)
     state["probs"].clear()
     state["held"]["trained"] = {}
     if os.path.exists(CLASSIFIER_PATH):
@@ -166,7 +175,7 @@ def check_trained(hands, now):
     for key in list(state["probs"]):
         if key not in seen:
             del state["probs"][key]
-    if classifier is None:
+    if classifier is None or motion_recognizer is not None:
         state["held"]["trained"] = {}
         return None
     return held_pose("trained", [guess_pose(hand, now=now) for hand in hands], hands, now)
@@ -178,6 +187,10 @@ def check_ready_made(hands, now):
 
 def status():
     """Progress for a preview overlay; does not advance recognition or trigger events."""
+    if motion_recognizer is not None:
+        active = motion_recognizer.segmenter.active
+        return [{"name": "Move, then pause" if active else "Rest, then make your motion",
+                 "progress": 0, "done": False, "motion": True}]
     return [{"name": held["name"], "progress": min(1.0, held["duration"] / TRAINED_HOLD),
              "done": held["done"]}
             for held in state["held"].values() if held.get("name")]
@@ -188,7 +201,12 @@ def status():
 def detect(hands, now):
     # returns the gestures that just went off, like [{"type": "trained", "name": "peace", "x": .., "y": ..}]
     events = []
-    for event in [check_trained(hands, now), check_ready_made(hands, now)]:
+    pose_events = [] if motion_recognizer is not None else [check_trained(hands, now), check_ready_made(hands, now)]
+    for event in pose_events:
+        if event:
+            events.append(event)
+    if motion_recognizer is not None:
+        event = motion_recognizer.update(hands, now)
         if event:
             events.append(event)
     return events

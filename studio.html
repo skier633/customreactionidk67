@@ -148,8 +148,8 @@
     <div>
       <p class="eyebrow">Your hands. A little more expressive.</p>
       <h1 id="studio-title">Make your<br>next <span>move.</span></h1>
-      <p class="sub">Turn a gesture into a reaction. Draw a thought in the air. Make every call feel a little more like you.</p>
-      <div class="hero-actions"><a class="action-link" href="#presets">Find your first reaction ↗</a><span class="hero-note">Settings save automatically</span></div>
+      <p class="sub">Teach a wave, a swipe, or your own signature motion. Gesture Cam learns the whole movement, from start to finish.</p>
+      <div class="hero-actions"><a class="action-link" href="#custom">Teach your first motion ↗</a><span class="hero-note">Settings save automatically</span></div>
     </div>
     <div class="motion-art" aria-hidden="true">
       <svg viewBox="0 0 480 340" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -182,7 +182,7 @@
   <div id="job" aria-live="polite"></div>
 
   <section id="reactions" aria-labelledby="reactions-title">
-    <div class="section-heading"><div><h2 id="reactions-title"><span class="section-number">02</span>Your reactions</h2><p>Hold a pose to trigger it. Use “Try it” with the camera running to preview.</p></div><span class="section-tag" id="reaction-count">7 built-in gestures</span></div>
+    <div class="section-heading"><div><h2 id="reactions-title"><span class="section-number">02</span>Your reactions</h2><p>Pose shortcuts work until a motion model is trained. Use “Try it” to preview any effect.</p></div><span class="section-tag" id="reaction-count">7 optional pose shortcuts</span></div>
     <div id="readymade"><div class="card muted">Loading your reactions…</div></div>
   </section>
 
@@ -192,17 +192,16 @@
   </section>
 
   <section id="custom" aria-labelledby="custom-title">
-    <div class="section-heading"><div><h2 id="custom-title"><span class="section-number">04</span>A gesture of your own</h2><p>Record a signature move, then choose what happens when you make it.</p></div><span class="section-tag">Custom gestures</span></div>
+    <div class="section-heading"><div><h2 id="custom-title"><span class="section-number">04</span>Teach a movement</h2><p>Record a signature move, then choose what happens when you make it.</p></div><span class="section-tag">Custom gestures</span></div>
     <div id="none"></div>
     <div id="gestures"></div>
     <div class="card">
       <label for="new-name" class="name" style="display:block;margin-bottom:10px">Add a gesture</label>
       <form id="add" class="row">
-        <input type="text" id="new-name" placeholder="Name your move, e.g. rock_on" autocomplete="off" required>
+        <input type="text" id="new-name" placeholder="Name your move, e.g. circle or swipe" autocomplete="off" required>
         <button class="primary" type="submit" id="record-button" disabled>Record gesture ↗</button>
       </form>
-      <p class="muted" style="margin:12px 0 0">A camera window opens with a 3-second countdown, followed by a 15-second recording.
-        Hold the pose while moving, tilting, and varying your distance for a more reliable result.</p>
+      <p class="muted" style="margin:12px 0 0">Use one hand. Rest, perform the whole motion, then pause for half a second. Repeat 8–12 times at different speeds. Press Q to save. Record another session with different lighting for stronger validation.</p>
     </div>
   </section>
 
@@ -461,24 +460,23 @@ function renderSettings() {
     return `<div class="muted"><span class="${cls}">${pct(r.accuracy)} right</span> on the test${mixText}</div>`;
   };
 
-  $("none").innerHTML = (report ? `<p class="muted" style="margin:0 0 12px">tested on the last 20% of each recording
-      (which it didnt learn from): <b>${pct(report.accuracy)}</b> right overall</p>` : "") + (S.none_samples
+  $("none").innerHTML = (report ? `<p class="muted" style="margin:0 0 12px">${report.kind === "motion" ? "Motion validation (" + Object.values(report.split).filter((v,i,a) => a.indexOf(v) === i).map(esc).join(", ") + ")" : "Pose validation"}: <b>${pct(report.accuracy)}</b> right overall${report.kind === "motion" ? ` · ${pct(report.background_false_accept_rate)} background false accepts · ${report.validation_examples} held-out repetitions` : ""}</p>` : "") + (S.none_samples
     ? `<div class="card row spread"><div><div class="name">none <span class="muted">(not a gesture)</span></div>
-         <div class="muted">${S.none_samples} samples of relaxed hand movement to reduce accidental triggers</div>${scoreLine("none")}</div>
+         <div class="muted">${S.none_samples} examples of relaxed hand movement to reduce accidental triggers</div>${scoreLine("none")}</div>
          <button data-record="none"${busy}>record more</button></div>`
-    : `<div class="banner row spread" style="margin-top:0;margin-bottom:12px"><div><b>Teach it what a resting hand looks like</b>
+    : `<div class="banner row spread" style="margin-top:0;margin-bottom:12px"><div><b>Teach it ordinary movements to ignore</b>
          <div class="muted">For custom gestures, first record a few natural movements: wave, relax your fingers, and change position. This helps prevent accidental triggers.</div></div>
-         <button class="primary" data-record="none"${busy}>Record resting movements</button></div>`);
+         <button class="primary" data-record="none"${busy}>Record background motions</button></div>`);
 
   $("gestures").innerHTML = S.gestures.map((g) => `
     <div class="card">
       <div class="row spread">
-        <div><span class="name">${esc(g.name)}</span> <span class="muted">${g.samples} samples</span>${scoreLine(g.name)}</div>
+        <div><span class="name">${esc(g.name)}</span> <span class="muted">${g.samples} examples</span>${scoreLine(g.name)}</div>
         <div class="row"><button data-record="${esc(g.name)}"${busy}>record more</button>
           <button class="danger" data-delete="${esc(g.name)}"${busy}>delete</button></div>
       </div>
       ${slot(g.name, "one hand")}
-      ${slot(g.name + "_x2", "both hands")}
+      ${(S.motion_names || []).includes(g.name) ? "" : slot(g.name + "_x2", "both hands")}
     </div>`).join("") || `<p class="muted">Your built-in reactions are ready whenever you are. Add a custom gesture below to go further.</p>`;
 
   const isVideo = (f) => /\.(mp4|mov|m4v)$/i.test(f);
