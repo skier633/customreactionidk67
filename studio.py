@@ -301,6 +301,21 @@ def reset():
     return state()
 
 
+@app.post("/api/preset")
+def apply_preset():
+    name = (request.get_json(silent=True) or {}).get("name")
+    if not isinstance(name, str) or name not in settings.PRESETS:
+        abort(400, "unknown preset")
+    config = settings.load()
+    for key, value in settings.PRESETS[name].items():
+        current = config["gestures"].get(key)
+        # An untouched/reset slot is safe to fill. Keep any edits, including disabled slots.
+        if current is None or current == settings.effect({}):
+            config["gestures"][key] = settings.effect(value)
+    settings.save(config)
+    return state()
+
+
 @app.post("/api/test")
 def test():
     # tells gesture_cam.py to play this gesture's effect right now

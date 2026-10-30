@@ -86,6 +86,7 @@ def new_pen():
         "open_for": 0.0, "unsure": [],             # how long its looked like you let go, and the points meanwhile
         "last_t": None,
         "last_seen": None, "offset": None,         # last time we saw this hand, last good thumb -> pen point offset
+        "track_id": None,                         # a new hand must never inherit an old stroke
         "odd_offset": None, "not_pinching": None,  # since when the offset looked off / the pinch dropped while waiting
         "smooth": OneEuro(), "point": None,
     }
@@ -114,7 +115,8 @@ def pen_point(hand, pen, w, h, now):
 
 def is_down(hand):
     pen = pens.get(hand["label"])
-    return bool(pen and pen["down"])
+    same_hand = pen and ("track_id" not in hand or hand["track_id"] == pen.get("track_id"))
+    return bool(same_hand and pen["down"])
 
 
 def clear():
@@ -143,6 +145,11 @@ def update(hands, now, w, h, cfg):
         label = hand["label"]
         seen.add(label)
         pen = pens.setdefault(label, new_pen())
+        track_id = hand.get("track_id")
+        if track_id is not None and track_id != pen.get("track_id"):
+            lift(pen, now)
+            pen = pens[label] = new_pen()
+            pen["track_id"] = track_id
         amount = pinch(hand)
         fingers = curl(hand)
         any_grip = cfg["grip"] == "any"

@@ -80,3 +80,25 @@ def test_switch_a_gesture_off_and_on(client):
     assert json.load(open("settings.json"))["gestures"]["thumbs_up_x2"]["enabled"] is False
     s = client.post("/api/set", json={"key": "thumbs_up_x2", "field": "enabled", "value": True}).get_json()
     assert s["effects"]["thumbs_up_x2"]["enabled"] is True
+
+
+def test_preset_is_ready_to_use_and_preserves_edits(client):
+    client.post("/api/set", json={"key": "thumbs_up", "field": "text", "value": "My caption"})
+    client.post("/api/set", json={"key": "i_love_you", "field": "enabled", "value": False})
+    result = client.post("/api/preset", json={"name": "celebrate"})
+    assert result.status_code == 200
+    effects = result.get_json()["effects"]
+    assert effects["thumbs_up"]["text"] == "My caption"
+    assert effects["thumbs_up"]["particles"] == ""
+    assert effects["i_love_you"]["enabled"] is False
+    assert effects["victory"]["particles"] == "fireworks"
+    assert effects["victory"]["duration"] == 2.5
+    assert client.post("/api/preset", json={"name": "celebrate"}).get_json()["effects"] == effects
+
+
+def test_preset_fills_reset_slots_and_rejects_unknown_names(client):
+    client.post("/api/reset", json={"key": "thumbs_up"})
+    effects = client.post("/api/preset", json={"name": "present"}).get_json()["effects"]
+    assert effects["thumbs_up"]["text"] == "Great question"
+    for name in ["missing", [], None]:
+        assert client.post("/api/preset", json={"name": name}).status_code == 400

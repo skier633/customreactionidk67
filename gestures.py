@@ -5,6 +5,7 @@
 # record.py + train.py (checked in check_trained())
 
 import os
+import time
 
 import numpy as np
 
@@ -15,7 +16,9 @@ from tracking import WRIST, hand_features
 TRAINED_HOLD = 0.4       # hold a trained (or ready-made) gesture this long before it triggers
 TRAINED_COOLDOWN = 2.0
 TRAINED_MIN_CONFIDENCE = 0.8
-SMOOTH_FRAMES = 5        # average the network's guesses over this many frames (fewer flickers)
+SMOOTH_SECONDS = 0.08   # time-based probability smoothing, independent of camera frame rate
+RELEASE_GRACE = 0.18    # a brief uncertain frame pauses a hold instead of cancelling it
+MAX_SAMPLE_GAP = 0.25   # never infer a continuous hold across a stalled camera
 
 # mediapipe's ready-made gestures: their name -> our name
 READY_MADE = {"Thumb_Up": "thumbs_up", "Thumb_Down": "thumbs_down", "Open_Palm": "open_palm",
@@ -26,7 +29,7 @@ CLASSIFIER_PATH = "models/my_gestures.joblib"
 # ---------- stuff we remember between frames ----------
 
 state = {
-    "probs": {},  # hand label -> the network's last few guesses (for smoothing)
+    "probs": {},  # track identity -> smoothed probabilities and sample time
     "held": {"trained": {}, "ready_made": {}},  # what pose each kind is seeing, and since when
     "last_trained": {},  # gesture name -> when it last went off
 }
@@ -52,29 +55,40 @@ def finger_bend(world, knuckle):
 
 def load_classifier():
     global classifier
+    state["probs"].clear()
+    state["held"]["trained"] = {}
     if os.path.exists(CLASSIFIER_PATH):
         import joblib
         try:
             classifier = joblib.load(CLASSIFIER_PATH)
         except Exception as e:
+            classifier = None
             print("couldnt load", CLASSIFIER_PATH, "-", e)
             return
         print("loaded trained gestures:", [str(c) for c in classifier.classes_ if c != "none"])
     else:
         classifier = None
         print("no trained gestures yet (make some with: python studio.py)")
-    state["probs"].clear()  # the old guesses were for the old classifier
 
 
-def guess_pose(hand, smooth=True):
-    # the trained gesture this hand is doing, or None. averages the last few frames so one
-    # weird frame doesnt count
+def identity(hand):
+    return hand.get("track_id", hand["label"])
+
+
+def guess_pose(hand, smooth=True, now=None):
+    # Smooth by elapsed time so the response is consistent at different frame rates.
     probs = classifier.predict_proba([hand_features(hand)])[0]
     if smooth:
-        recent = state["probs"].setdefault(hand["label"], [])
-        recent.append(probs)
-        del recent[:-SMOOTH_FRAMES]
-        probs = np.mean(recent, axis=0)
+        now = time.monotonic() if now is None else now
+        key = identity(hand)
+        recent = state["probs"].get(key)
+        if recent is not None:
+            previous, previous_time = recent
+            dt = now - previous_time
+            if 0 <= dt <= MAX_SAMPLE_GAP and previous.shape == probs.shape:
+                alpha = -np.expm1(-dt / SMOOTH_SECONDS)
+                probs = previous + alpha * (probs - previous)
+        state["probs"][key] = (probs.copy(), now)
     best = int(np.argmax(probs))
     name = str(classifier.classes_[best])
     if name == "none" or probs[best] < TRAINED_MIN_CONFIDENCE:
@@ -90,43 +104,83 @@ def ready_made_pose(hand):
 
 
 def held_pose(kind, names, hands, now):
-    # turns per-hand guesses into an event once one is held long enough. both hands = "_x2"
+    # Count only observed pose time. Brief uncertainty pauses the timer and retains a
+    # fired latch; a deliberate release rearms it. Ownership follows physical tracks.
     held = state["held"][kind]
+    previous_time = held.get("time", now)
+    dt = now - previous_time
+    if dt < 0 or dt > MAX_SAMPLE_GAP:
+        held.clear()
+        dt = 0
+
     if len(names) == 2 and names[0] is not None and names[0] == names[1]:
         current = names[0] + "_x2"
+        participants = hands
     else:
-        current = next((n for n in names if n is not None), None)
+        choices = [(name, [hand]) for name, hand in zip(names, hands) if name is not None]
+        # Detection order can change. Keep following the same participant while its
+        # pose is still visible, even when the other hand is making another gesture.
+        selected = next(((name, hs) for name, hs in choices
+                         if (name, frozenset(identity(h) for h in hs)) == held.get("signature")),
+                        choices[0] if choices else (None, []))
+        current, participants = selected
+    signature = (current, frozenset(identity(h) for h in participants))
 
-    if current != held.get("name"):
-        held.update(name=current, since=now, done=False)
-    if current is None or held["done"] or now - held["since"] < TRAINED_HOLD:
+    if held and (current is None or signature != held.get("signature")):
+        if held.get("missing_since") is None:
+            held["missing_since"] = now
+        held.update(time=now, observed=False)
+        if now - held["missing_since"] < RELEASE_GRACE:
+            return None
+        held.clear()
+
+    if current is None:
+        return None
+    # A returning sample after a long observed absence is a new hold, even when no
+    # intermediate empty frames were delivered during the absence.
+    if held.get("missing_since") is not None and now - held["missing_since"] >= RELEASE_GRACE:
+        held.clear()
+
+    if not held:
+        held.update(name=current, signature=signature, duration=0.0, done=False,
+                    time=now, observed=True, missing_since=None)
+    else:
+        if held.get("observed"):
+            held["duration"] += dt
+        held.update(time=now, observed=True, missing_since=None)
+
+    if held["done"] or held["duration"] + 1e-9 < TRAINED_HOLD:
         return None
     if now - state["last_trained"].get(current, -99) < TRAINED_COOLDOWN:
         return None
 
     held["done"] = True
     state["last_trained"][current] = now
-    middle = np.mean([hand["pts"][WRIST] for hand in hands], axis=0)
+    middle = np.mean([hand["pts"][WRIST] for hand in participants], axis=0)
     return {"type": kind, "name": current, "x": middle[0], "y": middle[1]}
 
 
 def check_trained(hands, now):
     # forget the smoothing for hands that left
-    seen = {hand["label"] for hand in hands}
-    for label in list(state["probs"]):
-        if label not in seen:
-            del state["probs"][label]
-    if classifier is None or len(hands) == 0:
+    seen = {identity(hand) for hand in hands}
+    for key in list(state["probs"]):
+        if key not in seen:
+            del state["probs"][key]
+    if classifier is None:
         state["held"]["trained"] = {}
         return None
-    return held_pose("trained", [guess_pose(hand) for hand in hands], hands, now)
+    return held_pose("trained", [guess_pose(hand, now=now) for hand in hands], hands, now)
 
 
 def check_ready_made(hands, now):
-    if len(hands) == 0:
-        state["held"]["ready_made"] = {}
-        return None
     return held_pose("ready_made", [ready_made_pose(hand) for hand in hands], hands, now)
+
+
+def status():
+    """Progress for a preview overlay; does not advance recognition or trigger events."""
+    return [{"name": held["name"], "progress": min(1.0, held["duration"] / TRAINED_HOLD),
+             "done": held["done"]}
+            for held in state["held"].values() if held.get("name")]
 
 
 # ---------- run everything ----------

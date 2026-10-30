@@ -68,6 +68,25 @@ PEN_RANGES = {"thickness": (2, 30), "fade_after": (0, 60)}
 # what you get the first time (before settings.json exists)
 DEFAULTS = {"gestures": {}}
 
+# Optional starter scenes use built-in effects, so no downloads or recordings are needed.
+PRESETS = {
+    "celebrate": {
+        "thumbs_up": {"particles": "confetti", "text": "NICE!", "duration": 2.5},
+        "victory": {"particles": "fireworks", "text": "LET'S GO", "duration": 2.5},
+        "i_love_you": {"particles": "hearts", "duration": 2.5},
+    },
+    "present": {
+        "thumbs_up": {"text": "Great question", "duration": 2.5},
+        "victory": {"text": "Two things to remember", "duration": 3},
+        "pointing_up": {"text": "Here's the key idea", "duration": 3},
+    },
+    "play": {
+        "thumbs_down": {"filter": "gray", "text": "Well, that happened", "duration": 2},
+        "victory": {"particles": "confetti", "shake": 20, "duration": 2},
+        "i_love_you": {"filter": "sepia", "particles": "hearts", "duration": 2.5},
+    },
+}
+
 last_good = None
 
 

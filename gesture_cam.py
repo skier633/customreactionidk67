@@ -13,6 +13,7 @@ import numpy as np
 import effects
 import gestures
 import pen
+import preview as preview_ui
 import settings
 import sounds
 from tracking import (make_hand_tracker, make_face_tracker, make_person_cutter,
@@ -44,9 +45,7 @@ TEST_FILE = "test_trigger.json"
 
 
 def draw_debug(frame, hands):
-    for hand in hands:
-        for x, y in hand["pts"]:
-            cv2.circle(frame, (int(x), int(y)), 4, (0, 255, 0), -1)
+    preview_ui.skeleton(frame, hands)
 
 
 def load_settings():
@@ -96,6 +95,7 @@ def main():
     ok, frame = cap.read()
     if not ok:
         print("couldnt open the camera. on mac check System Settings > Privacy > Camera for Terminal/VS Code")
+        cap.release()
         return
     h, w = frame.shape[:2]
     print("camera is", w, "x", h)
@@ -107,7 +107,7 @@ def main():
     if SEND_SOUNDS_TO_CALL:
         sounds.start_call_mix(CALL_MIC)
     stamp = settings.stamp()
-    last_check = time.time()
+    last_check = time.monotonic()
     if os.path.exists(TEST_FILE):
         os.remove(TEST_FILE)  # old leftover
 
@@ -122,8 +122,10 @@ def main():
             print("  reason:", e)
 
     show_debug = SHOW_DEBUG
+    show_hud = True
+    display_fps = 30.0
     last_fired = {}  # gesture name -> time, for the cooldowns
-    start = time.time()
+    start = time.monotonic()
     last = start
     last_ms = -1
 
@@ -142,8 +144,9 @@ def main():
             print("camera stopped")
             break
 
-        now = time.time()
+        now = time.monotonic()
         dt = now - last
+        display_fps += min(1.0, dt * 3) * (1 / max(dt, 1e-6) - display_fps)
         last = now
 
         # check once a second if studio.py changed the settings or retrained the gestures
@@ -206,9 +209,13 @@ def main():
         if cam is not None:
             cam.send(cv2.cvtColor(out, cv2.COLOR_BGR2RGB))
 
+        if show_hud:
+            preview_ui.draw(preview, hands, display_fps, config["pen"]["enabled"],
+                            cam is not None, gestures.status())
+
         if show_debug:
             for i, hand in enumerate(hands):
-                cv2.putText(preview, gestures.debug_text(hand), (10, 30 + 30 * i),
+                cv2.putText(preview, gestures.debug_text(hand), (10, 130 + 30 * i),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
             fps = 1 / max(dt, 1e-6)
             cv2.putText(preview, "fps: " + str(int(fps)), (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
@@ -219,6 +226,8 @@ def main():
             break
         if key == ord("d"):
             show_debug = not show_debug
+        if key == ord("h"):
+            show_hud = not show_hud
         if key == ord("c"):
             pen.clear()
         if key == ord("p"):
@@ -228,6 +237,10 @@ def main():
             print("air pen", "on" if config["pen"]["enabled"] else "off")
 
     cap.release()
+    hand_tracker.close()
+    if face_tracker is not None:
+        face_tracker.close()
+    person_cutter.close()
     sounds.stop_call_mix()
     if cam is not None:
         cam.close()

@@ -6,134 +6,221 @@
 <title>Gesture Studio</title>
 <style>
   :root {
-    --bg: #f6f5f2; --card: #ffffff; --text: #1d1c1a; --muted: #6b6862; --line: #e4e1db;
-    --accent: #e0457b; --accent-text: #ffffff; --warn-bg: #fff4d6; --warn-line: #f0d48a;
-    --bad: #c4352b; --good: #2f8a4c; --code-bg: #f0eee9; --chip: #f1eee8;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #161514; --card: #201f1d; --text: #edeae4; --muted: #9c978e; --line: #34322e;
-      --accent: #f0659a; --accent-text: #1a0d12; --warn-bg: #3a3017; --warn-line: #66542a;
-      --bad: #f07368; --good: #6cc78a; --code-bg: #2a2926; --chip: #2c2a27;
-    }
+    color-scheme: dark;
+    --bg: #101310; --card: #191e19; --text: #eff3e9; --muted: #a7b1a2; --line: #343d32;
+    --accent: #c6f17b; --accent-text: #17200c; --warn-bg: #29271a; --warn-line: #615534;
+    --bad: #ff9e93; --good: #c6f17b; --code-bg: #101510; --chip: #2a3327;
   }
   * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 32px; }
   body { margin: 0; background: var(--bg); color: var(--text);
-         font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  main { max-width: 900px; margin: 0 auto; padding: 32px 16px 80px; }
-  h1 { font-size: 28px; margin: 0 0 4px; }
-  h2 { font-size: 18px; margin: 36px 0 12px; }
-  .sub { color: var(--muted); margin: 0; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+         font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  button, input, select { font: inherit; }
+  a { color: inherit; text-decoration: none; }
+  a:hover { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .skip-link { position: absolute; top: -60px; left: 20px; padding: 10px 18px; background: var(--accent); color: var(--accent-text); z-index: 10; }
+  .skip-link:focus { top: 12px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 0 36px 64px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 94px; border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 12px; font-size: 19px; font-weight: 650; letter-spacing: -.6px; }
+  .brand-mark { display: grid; place-items: center; background: var(--accent); width: 34px; height: 34px; border-radius: 10px; color: var(--accent-text); font-size: 25px; line-height: 1; }
+  .brand small { color: var(--muted); font-size: 12px; font-weight: 450; letter-spacing: .1em; margin-left: 6px; text-transform: uppercase; }
+  nav { display: flex; gap: 24px; color: var(--muted); font-size: 13px; }
+  .connection { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .connection::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .connection.connected { color: var(--accent); }
+  .connection.error { color: var(--bad); }
+  .hero { padding: 54px 0 38px; display: grid; grid-template-columns: 1.25fr 1fr; gap: 40px; align-items: center; }
+  .eyebrow { font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin: 0 0 16px; }
+  h1 { font-size: clamp(38px, 5.5vw, 66px); line-height: 1.04; letter-spacing: -.06em; font-weight: 550; margin: 0 0 22px; }
+  h1 span { color: var(--accent); }
+  .sub { color: var(--muted); margin: 0; max-width: 440px; font-size: 15px; line-height: 1.7; }
+  .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; margin-top: 24px; }
+  .action-link { display: inline-block; border-radius: 8px; background: var(--accent); color: var(--accent-text); padding: 10px 17px; font-size: 13px; font-weight: 650; }
+  .action-link:hover { background: #d8ffa0; color: var(--accent-text); }
+  .hero-note { font-size: 12px; color: var(--muted); }
+  .motion-art { position: relative; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: #171d15; aspect-ratio: 1.42; }
+  .motion-art svg { width: 100%; height: 100%; display: block; }
+  .art-label { position: absolute; left: 20px; bottom: 16px; font: 10px ui-monospace, Menlo, monospace; text-transform: uppercase; letter-spacing: .12em; color: #b8c9a6; }
+  .art-label span { color: #c6f17b; margin-right: 8px; }
+  .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 40px 0 18px; }
+  h2 { font-size: 22px; letter-spacing: -.6px; font-weight: 550; margin: 0; }
+  .section-heading p { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
+  .section-number { color: var(--accent); font: 11px ui-monospace, Menlo, monospace; letter-spacing: .1em; margin-right: 9px; }
+  .section-tag { flex-shrink: 0; color: var(--muted); font: 10px ui-monospace, Menlo, monospace; text-transform: uppercase; letter-spacing: .08em; }
+  .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .preset { display: flex; text-align: left; align-items: start; gap: 15px; padding: 22px; border-radius: 12px; background: var(--card); }
+  .preset:hover:not(:disabled) { background: #242e1f; border-color: #71835b; }
+  .preset-symbol { width: 36px; height: 36px; flex-shrink: 0; display: grid; place-items: center; background: #303d22; color: var(--accent); border-radius: 10px; font-size: 22px; }
+  .preset:nth-child(2) .preset-symbol { color: #c6d2ff; background: #2e3346; }
+  .preset:nth-child(3) .preset-symbol { color: #ffbd96; background: #433126; }
+  .preset strong { display: block; font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .preset small { display: block; color: var(--muted); font-size: 12px; line-height: 1.6; }
+  .preset-arrow { margin-left: auto; color: var(--muted); }
+  .preset-note { color: var(--muted); font-size: 12px; margin: 12px 0 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 22px; margin-bottom: 12px; }
   .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .spread { justify-content: space-between; }
-  .name { font-weight: 600; font-size: 16px; }
-  .muted { color: var(--muted); font-size: 13px; }
-  select, input[type=text], input[type=number] { flex: 1; min-width: 0; font: inherit; padding: 6px 8px; border-radius: 6px;
-         border: 1px solid var(--line); background: var(--bg); color: var(--text); }
-  input[type=number] { flex: 0 0 76px; }
+  .name { font-weight: 600; font-size: 15px; }
+  .muted { color: var(--muted); font-size: 12px; }
+  select, input[type=text], input[type=number] { flex: 1; min-width: 0; font-size: 13px; padding: 9px 10px; border-radius: 6px;
+         border: 1px solid var(--line); background: #121710; color: var(--text); }
+  input[type=number] { flex: 0 0 76px; width: 76px; }
   input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
+  input[type=color] { width: 54px; height: 30px; padding: 2px; border: 1px solid var(--line); background: var(--bg); border-radius: 6px; }
   select:disabled, input:disabled { opacity: .45; }
-  button { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line);
-           background: var(--card); color: var(--text); cursor: pointer; }
-  button:hover:not(:disabled) { border-color: var(--muted); }
+  button { font-size: 12px; padding: 9px 13px; border-radius: 7px; border: 1px solid var(--line);
+           background: #242b22; color: var(--text); cursor: pointer; transition: background .15s, border-color .15s; }
+  button:hover:not(:disabled) { border-color: #74826a; background: #303a2b; }
   button:disabled { opacity: .45; cursor: default; }
-  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 650; }
+  button.primary:hover:not(:disabled) { background: #dcffa5; }
   button.danger { color: var(--bad); }
-  button.icon { padding: 6px 9px; }
-  .banner { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 12px; padding: 14px 16px; margin-top: 20px; }
-  .job pre { background: var(--code-bg); border-radius: 8px; padding: 10px; margin: 10px 0 0; max-height: 220px;
-             overflow: auto; font: 12px/1.45 ui-monospace, Menlo, monospace; white-space: pre-wrap; }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); display: inline-block; animation: pulse 1s infinite; }
+  button.icon { padding: 8px 11px; }
+  .banner { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 12px; padding: 18px 22px; margin-top: 20px; }
+  .job pre { background: var(--code-bg); border-radius: 8px; padding: 12px; margin: 12px 0 0; max-height: 220px;
+             overflow: auto; font: 12px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; animation: pulse 1s infinite; }
   @keyframes pulse { 50% { opacity: .25; } }
   .ok { color: var(--good); } .bad { color: var(--bad); }
-
-  /* one gesture (or one hand version of it) */
-  .slot { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; }
-  .slot-head { display: flex; align-items: center; gap: 10px; }
-  .slot-title { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); width: 84px; flex-shrink: 0; }
+  .slot { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 14px; }
+  .slot-head { display: flex; align-items: center; gap: 12px; }
+  .slot-head > button { white-space: nowrap; }
+  .slot-title { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); width: 80px; flex-shrink: 0; }
   .chips { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
-  .chip { background: var(--chip); border-radius: 999px; padding: 2px 10px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .chip { background: var(--chip); color: #d1dfc7; border-radius: 5px; padding: 3px 9px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .chip.none { background: none; color: var(--muted); padding-left: 0; }
-  .slot.off .chips { opacity: .45; }
+  .slot.off .chips { opacity: .6; }
   .chip.off { background: none; color: var(--bad); padding-left: 0; font-weight: 600; }
-  /* on/off switch */
-  .switch { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
+  .switch { position: relative; width: 34px; height: 20px; flex-shrink: 0; }
   .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 1; }
-  .switch span { position: absolute; inset: 0; background: var(--line); border-radius: 999px; transition: background .15s; }
-  .switch span::before { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; border-radius: 50%;
-                         background: var(--card); box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
-  .switch input:checked + span { background: var(--accent); }
-  .switch input:checked + span::before { transform: translateX(16px); }
-  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .editor { margin-top: 12px; }
-  .groups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  @media (max-width: 760px) { .groups { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 520px) { .groups { grid-template-columns: 1fr; } .slot-title { width: 100%; } .slot-head { flex-wrap: wrap; }
-                              .chips { flex-basis: 100%; } }
-  fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px 8px; margin: 0; min-width: 0; }
-  legend { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 0 4px; }
-  label.field { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
-  label.field > span:first-child { width: 58px; color: var(--muted); font-size: 13px; flex-shrink: 0; }
-  output { width: 34px; text-align: right; font-size: 13px; color: var(--muted); flex-shrink: 0; }
-  .timing { margin-top: 10px; gap: 14px; }
-  .timing label { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+  .switch span { position: absolute; inset: 0; background: #4c5647; border-radius: 999px; transition: background .15s; }
+  .switch span::before { content: ""; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; border-radius: 50%;
+                         background: #f0f5ea; transition: transform .15s; }
+  .switch input:checked + span { background: #6b8d39; }
+  .switch input:checked + span::before { transform: translateX(14px); background: var(--accent); }
+  .switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .editor { margin-top: 18px; }
+  .groups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 12px; margin: 0; min-width: 0; }
+  legend { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); padding: 0 5px; }
+  label.field { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+  label.field > span:first-child { width: 58px; color: var(--muted); font-size: 12px; flex-shrink: 0; }
+  .field.row > span:first-child { width: 58px; flex-shrink: 0; }
+  output { width: 30px; text-align: right; font: 11px ui-monospace, Menlo, monospace; color: var(--muted); flex-shrink: 0; }
+  .timing { margin-top: 14px; gap: 14px; }
+  .timing label { display: flex; align-items: center; gap: 6px; font-size: 12px; }
   .timing .grow { flex: 1; }
-
-  .thumbs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-  .thumb { width: 96px; text-align: center; font-size: 12px; color: var(--muted); word-break: break-all; }
+  .thumbs { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+  .thumb { width: 96px; text-align: center; font-size: 11px; color: var(--muted); word-break: break-all; }
   .thumb img, .thumb video { width: 96px; height: 96px; object-fit: contain; border-radius: 8px; border: 1px solid var(--line);
                background: repeating-conic-gradient(var(--line) 0 25%, transparent 0 50%) 0 0 / 16px 16px; }
-  .drop { display: block; border: 2px dashed var(--line); border-radius: 12px; padding: 22px; text-align: center; color: var(--muted); cursor: pointer; }
-  .drop.over { border-color: var(--accent); color: var(--text); }
+  .drop { display: block; border: 1px dashed #5b6852; border-radius: 9px; padding: 30px 18px; text-align: center; color: var(--muted); cursor: pointer; }
+  .drop strong { display: block; color: var(--text); font-size: 14px; margin-bottom: 5px; }
+  .drop small { font-size: 12px; }
+  .drop.over, .drop:hover { border-color: var(--accent); background: #20291b; }
   .sounds { margin-top: 10px; }
-  .sounds .row { padding: 4px 0; }
-  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--text); color: var(--bg);
-           padding: 8px 14px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .sounds .row { padding: 5px 0; font-size: 13px; }
+  .shortcut-bar { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 20px; display: flex; flex-wrap: wrap; gap: 18px; color: var(--muted); font-size: 11px; }
+  kbd { display: inline-block; font: 10px ui-monospace, Menlo, monospace; color: var(--text); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; min-width: 21px; padding: 1px 5px; text-align: center; margin-right: 4px; }
+  .footer-note { margin-left: auto; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--accent); color: var(--accent-text);
+           padding: 11px 18px; border: 1px solid #d4ff92; border-radius: 9px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100vw - 32px); box-shadow: 0 8px 32px #0006; z-index: 10; }
   #toast.show { opacity: 1; }
-  #toast.error { background: var(--bad); color: #fff; }
+  #toast.error { background: #502820; border-color: #ae6c5c; color: #fff; }
+  @media (max-width: 900px) { .groups { grid-template-columns: 1fr 1fr; } nav { gap: 15px; } .preset { padding: 16px; gap: 10px; } .preset-arrow { display: none; } }
+  @media (max-width: 700px) { main { padding: 0 20px 40px; } .topbar { min-height: 78px; flex-wrap: wrap; gap: 10px; padding: 18px 0; } nav { order: 3; width: 100%; } .hero { padding: 34px 0 10px; grid-template-columns: 1fr; gap: 28px; } .motion-art { display: none; } .presets { grid-template-columns: 1fr; } .preset { padding: 18px; } .preset-arrow { display: inline; } .section-heading { margin-top: 32px; } .section-tag { display: none; } .card { padding: 18px; } }
+  @media (max-width: 520px) { .groups { grid-template-columns: 1fr; } .slot-head { flex-wrap: wrap; gap: 10px; } .chips { flex-basis: calc(100% - 130px); } .slot-head > button { flex: 1; } .section-heading { align-items: start; } .brand small { display: none; } .connection { font-size: 10px; } .footer-note { margin-left: 0; width: 100%; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#presets">Skip to controls</a>
 <main>
-  <h1>gesture studio</h1>
-  <p class="sub">pick what each gesture does. everything saves by itself, and gesture_cam.py picks it up while it's running.
-    hit <b>try it</b> to see an effect without doing the gesture, and use the switch next to a gesture to turn it off if it goes off too easily.</p>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Gesture Cam Studio home"><span class="brand-mark" aria-hidden="true">⌁</span>gesture cam <small>Studio</small></a>
+    <nav aria-label="Studio sections"><a href="#reactions">Reactions</a><a href="#drawing">Air pen</a><a href="#custom">Custom gestures</a><a href="#media">Media</a></nav>
+    <span id="connection" class="connection" role="status">Connecting to Studio</span>
+  </header>
+  <section class="hero" aria-labelledby="studio-title">
+    <div>
+      <p class="eyebrow">Your hands. A little more expressive.</p>
+      <h1 id="studio-title">Make your<br>next <span>move.</span></h1>
+      <p class="sub">Turn a gesture into a reaction. Draw a thought in the air. Make every call feel a little more like you.</p>
+      <div class="hero-actions"><a class="action-link" href="#presets">Find your first reaction ↗</a><span class="hero-note">Settings save automatically</span></div>
+    </div>
+    <div class="motion-art" aria-hidden="true">
+      <svg viewBox="0 0 480 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#35432d"/></pattern><linearGradient id="trail" x1="75" y1="260" x2="360" y2="100" gradientUnits="userSpaceOnUse"><stop stop-color="#c6f17b" stop-opacity=".1"/><stop offset="1" stop-color="#c6f17b"/></linearGradient></defs>
+        <rect width="480" height="340" fill="url(#grid)"/>
+        <circle cx="251" cy="177" r="120" stroke="#35432d" stroke-dasharray="3 8"/>
+        <path d="M65 256C108 170 199 312 193 230C184 126 285 286 286 203C286 132 365 180 352 93" stroke="#c6f17b" stroke-opacity=".07" stroke-width="25" stroke-linecap="round"/>
+        <path d="M65 256C108 170 199 312 193 230C184 126 285 286 286 203C286 132 365 180 352 93" stroke="url(#trail)" stroke-width="4" stroke-linecap="round"/>
+        <path d="M215 275L191 224L156 188L145 163L151 150L168 157L202 190L203 138L206 97L210 68L220 61L230 72L230 103L229 145L235 166L252 122L273 84L283 78L294 83L295 96L279 131L262 176L279 165L299 151L310 155L310 169L293 188L282 210L292 203L310 184L323 184L330 195L315 218L298 254L260 283Z" fill="#23311d" fill-opacity=".94" stroke="#6f8957" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M235 263L202 218L164 174M235 263L219 189L218 140L219 103L219 77M235 263L243 199L260 156L278 117L286 92M235 263L264 218L280 191L299 163M235 263L280 240L302 213L319 195" stroke="#a4c67c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <g fill="#c6f17b"><circle cx="235" cy="263" r="4"/><circle cx="202" cy="218" r="3"/><circle cx="164" cy="174" r="4"/><circle cx="219" cy="189" r="3"/><circle cx="218" cy="140" r="3"/><circle cx="219" cy="103" r="3"/><circle cx="219" cy="77" r="4"/><circle cx="243" cy="199" r="3"/><circle cx="260" cy="156" r="3"/><circle cx="278" cy="117" r="3"/><circle cx="286" cy="92" r="4"/><circle cx="264" cy="218" r="3"/><circle cx="280" cy="191" r="3"/><circle cx="299" cy="163" r="4"/><circle cx="280" cy="240" r="3"/><circle cx="302" cy="213" r="3"/><circle cx="319" cy="195" r="4"/><circle cx="352" cy="93" r="5"/></g>
+        <path d="M28 53V28H53M427 28H452V53M452 287V312H427M53 312H28V287" stroke="#62794d"/>
+        <text x="28" y="79" fill="#839575" font-size="9" font-family="monospace" letter-spacing="2">MOTION / EXPRESSION</text>
+      </svg>
+      <div class="art-label"><span>↗</span> A gesture becomes a canvas</div>
+    </div>
+  </section>
+
+  <section id="presets" aria-labelledby="presets-title">
+    <div class="section-heading"><div><h2 id="presets-title"><span class="section-number">01</span>Start with a mood</h2><p>A few ready-to-go reactions. Make them your own below.</p></div><span class="section-tag">No uploads needed</span></div>
+    <div class="presets">
+      <button class="preset" data-preset="celebrate" disabled><span class="preset-symbol" aria-hidden="true">✳</span><span><strong>Celebrate</strong><small>Big wins. Good news.<br>Give the moment some sparkle.</small></span><span class="preset-arrow" aria-hidden="true">↗</span></button>
+      <button class="preset" data-preset="present" disabled><span class="preset-symbol" aria-hidden="true">↗</span><span><strong>Present</strong><small>Keep everyone with you.<br>Clear cues for your next idea.</small></span><span class="preset-arrow" aria-hidden="true">↗</span></button>
+      <button class="preset" data-preset="play" disabled><span class="preset-symbol" aria-hidden="true">⌁</span><span><strong>Play</strong><small>A little unexpected.<br>Give your call a different look.</small></span><span class="preset-arrow" aria-hidden="true">↗</span></button>
+    </div>
+    <p class="preset-note">Presets only fill gestures you haven’t configured. Your existing reactions stay yours.</p>
+  </section>
 
   <div id="banner"></div>
-  <div id="job"></div>
+  <div id="job" aria-live="polite"></div>
 
-  <h2>air pen</h2>
-  <div id="pen"></div>
+  <section id="reactions" aria-labelledby="reactions-title">
+    <div class="section-heading"><div><h2 id="reactions-title"><span class="section-number">02</span>Your reactions</h2><p>Hold a pose to trigger it. Use “Try it” with the camera running to preview.</p></div><span class="section-tag" id="reaction-count">7 built-in gestures</span></div>
+    <div id="readymade"><div class="card muted">Loading your reactions…</div></div>
+  </section>
 
-  <h2>ready-made gestures</h2>
-  <p class="muted" style="margin:-4px 0 12px">these come with mediapipe, so they work without recording anything. they do nothing until you give them an effect.</p>
-  <div id="readymade"></div>
+  <section id="drawing" aria-labelledby="drawing-title">
+    <div class="section-heading"><div><h2 id="drawing-title"><span class="section-number">03</span>Leave your mark</h2><p>Your fingertip is a pen. The whole frame is your canvas.</p></div><span class="section-tag">Air pen</span></div>
+    <div id="pen"><div class="card muted">Loading pen settings…</div></div>
+  </section>
 
-  <h2>your gestures</h2>
-  <div id="none"></div>
-  <div id="gestures"></div>
-  <div class="card">
-    <div class="name" style="margin-bottom:8px">add a gesture</div>
-    <form id="add" class="row">
-      <input type="text" id="new-name" placeholder="name, like thumbs_up or rock_on" autocomplete="off">
-      <button class="primary" type="submit">record it</button>
-    </form>
-    <p class="muted" style="margin:8px 0 0">a camera window opens (it might be behind this one). you get 3 seconds, then it records for 15.
-      hold the pose and move your hand around, tilt it, go closer and farther. more variety = works better.</p>
-  </div>
+  <section id="custom" aria-labelledby="custom-title">
+    <div class="section-heading"><div><h2 id="custom-title"><span class="section-number">04</span>A gesture of your own</h2><p>Record a signature move, then choose what happens when you make it.</p></div><span class="section-tag">Custom gestures</span></div>
+    <div id="none"></div>
+    <div id="gestures"></div>
+    <div class="card">
+      <label for="new-name" class="name" style="display:block;margin-bottom:10px">Add a gesture</label>
+      <form id="add" class="row">
+        <input type="text" id="new-name" placeholder="Name your move, e.g. rock_on" autocomplete="off" required>
+        <button class="primary" type="submit" id="record-button" disabled>Record gesture ↗</button>
+      </form>
+      <p class="muted" style="margin:12px 0 0">A camera window opens with a 3-second countdown, followed by a 15-second recording.
+        Hold the pose while moving, tilting, and varying your distance for a more reliable result.</p>
+    </div>
+  </section>
 
-  <h2>pictures, gifs & sounds</h2>
-  <div class="card">
-    <label class="drop" id="drop">
-      <input type="file" id="file" multiple accept=".png,.jpg,.jpeg,.gif,.mp4,.mov,.m4v,.wav,.mp3,.m4a" hidden>
-      drop pictures (png, jpg), gifs or videos (gif, mp4, mov) and sounds (wav, mp3) here, or click to pick files
-    </label>
-    <div class="thumbs" id="images"></div>
-    <div class="sounds" id="sound-list"></div>
-  </div>
+  <section id="media" aria-labelledby="media-title">
+    <div class="section-heading"><div><h2 id="media-title"><span class="section-number">05</span>Bring your own flavor</h2><p>Add a picture, a loop, or a perfectly timed sound.</p></div><span class="section-tag">Media library</span></div>
+    <div class="card">
+      <label class="drop" id="drop" tabindex="0" role="button" aria-label="Choose pictures, videos, or sounds to upload">
+        <input type="file" id="file" multiple accept=".png,.jpg,.jpeg,.gif,.mp4,.mov,.m4v,.wav,.mp3,.m4a" hidden>
+        <strong>Drop something good here, or browse files ↗</strong>
+        <small>PNG, JPG, GIF · MP4, MOV, M4V · WAV, MP3, M4A</small>
+      </label>
+      <div class="thumbs" id="images"></div>
+      <div class="sounds" id="sound-list"></div>
+    </div>
+  </section>
+  <footer class="shortcut-bar"><span>In the camera window</span><span><kbd>C</kbd> Clear ink</span><span><kbd>P</kbd> Toggle pen</span><span><kbd>D</kbd> Tracking view</span><span><kbd>H</kbd> Preview controls</span><span><kbd>Q</kbd> Quit</span><span class="footer-note">Made for a more expressive everyday.</span></footer>
 </main>
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 let S = null;              // latest state from the server
@@ -164,11 +251,20 @@ async function api(path, body, isForm) {
     body: isForm ? body : JSON.stringify(body),
     headers: isForm ? {} : {"Content-Type": "application/json"},
   };
-  const res = await fetch(path, opts);
-  const data = await res.json().catch(() => ({error: "something went wrong"}));
-  if (!res.ok) { toast(data.error || "something went wrong", true); return null; }
-  if (data.job) render(data);
-  return data;
+  try {
+    const res = await fetch(path, opts);
+    const data = await res.json().catch(() => ({error: "Could not read the Studio response."}));
+    if (!res.ok || data.error) { toast(data.error || "Could not save that change.", true); return null; }
+    $("connection").textContent = "Studio connected";
+    $("connection").className = "connection connected";
+    if (data.job) render(data);
+    return data;
+  } catch (err) {
+    $("connection").textContent = "Studio disconnected";
+    $("connection").className = "connection error";
+    toast("Studio is unavailable. Keep it running, then reload this page.", true);
+    return null;
+  }
 }
 
 // ---------- the effect editor ----------
@@ -211,7 +307,7 @@ function editor(key) {
       </fieldset>
       <fieldset><legend>sound</legend>
         <label class="field"><span>file</span>${select(key, "sound", fileOptions(S.sound_files, c.sound, "none"))}
-          <button class="icon" title="play" data-play-key="${esc(key)}">▶</button></label>
+          <button class="icon" title="Play sound" aria-label="Play sound" data-play-key="${esc(key)}">▶</button></label>
         <label class="field"><span>volume</span>${slider(key, "volume", c.volume, !c.sound)}</label>
       </fieldset>
       <fieldset><legend>distortion</legend>
@@ -252,7 +348,7 @@ function summary(key) {
   if (c.filter) chips.push(o.filter[c.filter]);
   if (c.shake) chips.push("shake");
   if (c.text) chips.push(`“${c.text}”`);
-  if (!chips.length) return `<span class="chip none">does nothing yet</span>`;
+  if (!chips.length) return `<span class="chip none">Choose an effect</span>`;
   chips.push(`${c.duration}s`);
   return chips.map((t) => `<span class="chip" title="${esc(t)}">${esc(t)}</span>`).join("");
 }
@@ -264,10 +360,10 @@ function slot(key, title) {
     <div class="slot-head">
       ${title ? `<div class="slot-title">${title}</div>` : ""}
       <label class="switch" title="${on ? "on. click to switch this gesture off" : "off. click to switch it back on"}">
-        <input type="checkbox" data-key="${esc(key)}" data-field="enabled"${on ? " checked" : ""} aria-label="gesture on/off"><span></span></label>
+        <input type="checkbox" data-key="${esc(key)}" data-field="enabled"${on ? " checked" : ""} aria-label="Enable ${esc(key.replaceAll('_', ' '))}"><span></span></label>
       <div class="chips">${on ? "" : `<span class="chip off">off</span>`}${summary(key)}</div>
-      <button data-try="${esc(key)}">try it</button>
-      <button data-toggle="${esc(key)}"${isOpen ? ' class="primary"' : ""}>${isOpen ? "done" : "edit"}</button>
+      <button data-try="${esc(key)}" aria-label="Try ${esc(key.replaceAll('_', ' '))}">Try it ↗</button>
+      <button data-toggle="${esc(key)}" aria-expanded="${isOpen}" aria-label="${isOpen ? 'Close' : 'Edit'} ${esc(key.replaceAll('_', ' '))}"${isOpen ? ' class="primary"' : ""}>${isOpen ? "Done" : "Customize"}</button>
     </div>
     ${isOpen ? editor(key) : ""}
   </div>`;
@@ -314,10 +410,9 @@ function renderSettings() {
 
   const p = S.pen;
   $("pen").innerHTML = `<div class="card">
-    <div class="row spread"><div><div class="name">draw in the air</div>
-      <div class="muted">pinch your thumb and index finger together (other fingers curled in, like holding a pen) to draw with your index fingertip, let go to stop.
-        in the camera window, C clears it and P turns the pen on/off.</div></div>
-      <label class="row"><input type="checkbox" data-pen-field="enabled"${p.enabled ? " checked" : ""}> on</label></div>
+    <div class="row spread"><div><div class="name">Air pen</div>
+      <div class="muted">Pinch thumb and index finger to draw; release to lift the pen. With the curled grip, keep your other fingers tucked in.</div></div>
+      <label class="row"><input type="checkbox" data-pen-field="enabled"${p.enabled ? " checked" : ""}> Enabled</label></div>
     <div class="groups" style="margin-top:12px">
       <fieldset><legend>ink</legend>
         <label class="field"><span>color</span><input type="color" value="${esc(p.color)}" data-pen-field="color"></label>
@@ -326,11 +421,11 @@ function renderSettings() {
       </fieldset>
       <fieldset><legend>pinch</legend>
         <label class="field"><span>grip</span><select data-pen-field="grip">${options(pairs(S.pen_grips), p.grip)}</select></label>
-        <label class="field" style="align-items:flex-start"><span>in the call</span>
+        <div class="field row" style="align-items:flex-start;flex-wrap:nowrap"><span class="muted">in the call</span>
           <span><label class="row" style="gap:6px"><input type="checkbox" data-pen-field="readable_for_call"${p.readable_for_call ? " checked" : ""}> readable for them</label>
           <span class="muted">${p.readable_for_call
             ? "they see the drawing exactly like you do, so writing reads right (it shows up on the other side from your hand for them)"
-            : "the ink follows your hand on their screen too, but writing looks backwards to them"}</span></span></label>
+            : "the ink follows your hand on their screen too, but writing looks backwards to them"}</span></span></div>
       </fieldset>
       <fieldset><legend>clearing</legend>
         <label class="field"><span>clear by</span><select data-pen-field="clear_with">${options(pairs(S.pen_clear), p.clear_with)}</select></label>
@@ -341,16 +436,17 @@ function renderSettings() {
     </div></div>`;
 
   // ready-made gestures are folded away unless you open them (or one already does something)
-  const hasEffect = (k) => summary(k).indexOf("does nothing yet") === -1;
+  const hasEffect = (k) => summary(k).indexOf("Choose an effect") === -1;
   const used = S.ready_made.filter((k) => hasEffect(k) || hasEffect(k + "_x2"));
+  $("reaction-count").textContent = used.length + " / " + S.ready_made.length + " configured";
   const showAll = open.has("__ready");
   const readyCards = (showAll ? S.ready_made : used).map((key) => {
     const [title, icon] = READY_INFO[key] || [key, ""];
     return `<div class="card"><div class="name">${icon} ${esc(title)}</div>${slot(key, "one hand")}${slot(key + "_x2", "both hands")}</div>`;
   }).join("");
   $("readymade").innerHTML = `<div class="row" style="margin-bottom:12px">
-      <button data-action="toggle-ready">${showAll ? "only show the ones i set up" : "show all " + S.ready_made.length}</button>
-      <span class="muted">${used.length ? used.length + " set up" : "none set up yet"}</span>
+      <button data-action="toggle-ready">${showAll ? "Show configured gestures" : "Explore all " + S.ready_made.length + " gestures"}</button>
+      <span class="muted">${used.length ? used.length + " set up" : "Choose a preset above or customize a gesture"}</span>
     </div>${readyCards}`;
 
   const report = S.needs_training ? null : S.report;
@@ -368,11 +464,11 @@ function renderSettings() {
   $("none").innerHTML = (report ? `<p class="muted" style="margin:0 0 12px">tested on the last 20% of each recording
       (which it didnt learn from): <b>${pct(report.accuracy)}</b> right overall</p>` : "") + (S.none_samples
     ? `<div class="card row spread"><div><div class="name">none <span class="muted">(not a gesture)</span></div>
-         <div class="muted">${S.none_samples} samples of random hand stuff, so it doesn't think every hand is a gesture</div>${scoreLine("none")}</div>
+         <div class="muted">${S.none_samples} samples of relaxed hand movement to reduce accidental triggers</div>${scoreLine("none")}</div>
          <button data-record="none"${busy}>record more</button></div>`
-    : `<div class="banner row spread" style="margin-top:0;margin-bottom:12px"><div><b>start here: record "none"</b>
-         <div class="muted">random hand stuff that isn't a gesture: waving, relaxed hand, half fist, whatever. this stops it from seeing gestures everywhere</div></div>
-         <button class="primary" data-record="none"${busy}>record none</button></div>`);
+    : `<div class="banner row spread" style="margin-top:0;margin-bottom:12px"><div><b>Teach it what a resting hand looks like</b>
+         <div class="muted">For custom gestures, first record a few natural movements: wave, relax your fingers, and change position. This helps prevent accidental triggers.</div></div>
+         <button class="primary" data-record="none"${busy}>Record resting movements</button></div>`);
 
   $("gestures").innerHTML = S.gestures.map((g) => `
     <div class="card">
@@ -383,7 +479,7 @@ function renderSettings() {
       </div>
       ${slot(g.name, "one hand")}
       ${slot(g.name + "_x2", "both hands")}
-    </div>`).join("") || `<p class="muted">no gestures yet. add one below.</p>`;
+    </div>`).join("") || `<p class="muted">Your built-in reactions are ready whenever you are. Add a custom gesture below to go further.</p>`;
 
   const isVideo = (f) => /\.(mp4|mov|m4v)$/i.test(f);
   $("images").innerHTML = S.images.concat(S.gifs).map((f) => {
@@ -392,20 +488,39 @@ function renderSettings() {
     return `<div class="thumb">${media}${esc(f)}</div>`;
   }).join("");
   $("sound-list").innerHTML = S.sound_files.map((f) =>
-    `<div class="row"><button class="icon" data-play-file="${esc(f)}">▶</button>${esc(f)}</div>`).join("");
+    `<div class="row"><button class="icon" aria-label="Play ${esc(f)}" data-play-file="${esc(f)}">▶</button>${esc(f)}</div>`).join("");
 }
 
 function render(state) {
   const wasRunning = S && S.job.running;
   S = state;
+  document.querySelectorAll("[data-preset]").forEach((button) => { button.disabled = false; });
+  $("record-button").disabled = S.job.running;
   renderJob();
   renderBanner();
   // only redraw the settings when something changed, so it doesnt close a dropdown you have open
   const key = JSON.stringify({...S, job: S.job.running, open: [...open]});
-  if (key !== dataKey) { dataKey = key; renderSettings(); }
+  if (key !== dataKey) {
+    // Preserve keyboard position when autosave replaces a control's markup.
+    const active = document.activeElement;
+    const selector = active?.dataset.penField
+      ? `[data-pen-field="${CSS.escape(active.dataset.penField)}"]`
+      : active?.dataset.field
+        ? `[data-key="${CSS.escape(active.dataset.key)}"][data-field="${CSS.escape(active.dataset.field)}"]`
+        : active?.dataset.toggle
+          ? `[data-toggle="${CSS.escape(active.dataset.toggle)}"]` : null;
+    const selection = active?.type === "text" ? [active.selectionStart, active.selectionEnd] : null;
+    dataKey = key;
+    renderSettings();
+    const replacement = selector && document.querySelector(selector);
+    if (replacement && !replacement.disabled) {
+      replacement.focus({preventScroll: true});
+      if (selection) replacement.setSelectionRange(...selection);
+    }
+  }
   if (S.job.running && !polling) polling = setInterval(() => api("/api/state"), 1000);
   if (!S.job.running && polling) { clearInterval(polling); polling = null; }
-  if (wasRunning && !S.job.running && S.job.ok && S.job.label === "training") toast("trained! gesture cam will reload it");
+  if (wasRunning && !S.job.running && S.job.ok && S.job.label === "training") toast("Gestures trained. The camera will reload them automatically.");
 }
 
 // ---------- changes and clicks ----------
@@ -414,7 +529,7 @@ function play(file) {
   if (audio) audio.pause();
   if (!file) return toast("pick a sound first");
   audio = new Audio("/files/sounds/" + encodeURIComponent(file));
-  audio.play();
+  audio.play().catch(() => toast("Could not play this sound. Check the file format.", true));
 }
 
 document.addEventListener("input", (e) => {
@@ -426,23 +541,34 @@ document.addEventListener("change", async (e) => {
   const el = e.target;
   if (el.dataset && el.dataset.penField) {
     const value = el.type === "checkbox" ? el.checked : el.value;
-    if (await api("/api/pen", {field: el.dataset.penField, value})) toast("saved");
+    if (await api("/api/pen", {field: el.dataset.penField, value})) toast("Changes saved");
     return;
   }
   if (!el.dataset || !el.dataset.field) return;
   const value = el.type === "checkbox" ? el.checked : el.value;
-  if (await api("/api/set", {key: el.dataset.key, field: el.dataset.field, value})) toast("saved");
+  if (await api("/api/set", {key: el.dataset.key, field: el.dataset.field, value})) toast("Changes saved");
 });
 
 document.addEventListener("click", async (e) => {
   const b = e.target.closest("button");
   if (!b) return;
-  if (b.dataset.toggle) {
+  if (b.dataset.preset) {
+    document.querySelectorAll("[data-preset]").forEach((button) => { button.disabled = true; });
+    const result = await api("/api/preset", {name: b.dataset.preset});
+    document.querySelectorAll("[data-preset]").forEach((button) => { button.disabled = !S; });
+    if (result) {
+      open.delete("__ready");
+      render(result);
+      toast("Preset applied. Your existing reactions were kept.");
+      $("reactions").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth"});
+    }
+  }
+  else if (b.dataset.toggle) {
     open.has(b.dataset.toggle) ? open.delete(b.dataset.toggle) : open.add(b.dataset.toggle);
     render(S);
   }
   else if (b.dataset.try) {
-    if (await api("/api/test", {key: b.dataset.try})) toast("sent to gesture cam (it has to be running to see it)");
+    if (await api("/api/test", {key: b.dataset.try})) toast("Preview sent. Check the running camera window.");
   }
   else if (b.dataset.reset) {
     if (confirm("put this gesture back how it started?")) api("/api/reset", {key: b.dataset.reset});
@@ -460,7 +586,7 @@ document.addEventListener("click", async (e) => {
     render(S);
   }
   else if (b.dataset.action === "clear-pen") {
-    if (await api("/api/clear_pen", {})) toast("cleared (gesture cam has to be running)");
+    if (await api("/api/clear_pen", {})) toast("Clear request sent to the camera.");
   }
   else if (b.dataset.action === "stop") api("/api/stop", {});
   else if (b.dataset.action === "close-job") $("job").innerHTML = "";
@@ -485,6 +611,9 @@ async function upload(files) {
 }
 $("file").addEventListener("change", (e) => { e.stopPropagation(); upload(e.target.files); e.target.value = ""; });
 const drop = $("drop");
+drop.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); }
+});
 drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
 drop.addEventListener("dragleave", () => drop.classList.remove("over"));
 drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); upload(e.dataTransfer.files); });
