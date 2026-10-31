@@ -384,11 +384,24 @@ def camera_preview():
     if camera_process is None or camera_process.poll() is not None:
         abort(404, "Camera is stopped")
     try:
-        with urllib.request.urlopen("http://127.0.0.1:5051/frame", timeout=1) as response:
-            data = response.read(2_000_000)
-        return Response(data, mimetype="image/jpeg", headers={"Cache-Control": "no-store"})
+        upstream = urllib.request.urlopen("http://127.0.0.1:5051/stream", timeout=3)
     except (OSError, urllib.error.URLError):
         return jsonify({"error": "Camera is starting or unavailable"}), 503
+
+    def frames():
+        try:
+            while True:
+                chunk = upstream.read1(65536)
+                if not chunk:
+                    break
+                yield chunk
+        except OSError:
+            pass
+        finally:
+            upstream.close()
+
+    return Response(frames(), content_type="multipart/x-mixed-replace; boundary=frame",
+                    headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
 
 
 @app.post("/api/test")

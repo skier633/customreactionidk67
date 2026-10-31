@@ -120,6 +120,7 @@ def is_down(hand):
 
 
 def clear():
+    _ink_cache.size = None
     strokes.clear()
     for pen in pens.values():
         pen["stroke"] = None
@@ -256,7 +257,7 @@ def check_clear(hands, now, cfg):
         print("cleared the drawing")
 
 
-def draw(frame, now, cfg, mirror=False):
+def _draw_fading(frame, now, cfg, mirror=False):
     # draws all the ink on the frame. glow = a soft colored halo around the line
     # mirror=True flips it left to right (for the mirrored preview, and for the call so writing
     # reads the right way for the other person)
@@ -299,3 +300,74 @@ def draw(frame, now, cfg, mirror=False):
         if pen["down"] and pen["point"] is not None:
             x, y = to_pixels(pen["point"])
             cv2.circle(frame, (x, y), max(3, int(cfg["thickness"] * scale * 0.6)), (255, 255, 255), -1, cv2.LINE_AA)
+
+
+class InkCache:
+    """Rasterize new segments once; reuse the ink for both video outputs."""
+    def __init__(self):
+        self.size = None
+        self.entries = []
+
+    def refresh(self, width, height, glow):
+        entries = [(id(stroke), len(stroke['points']), stroke['color'], stroke['thickness'])
+                   for stroke in strokes]
+        reset = self.size != (width, height, glow)
+        if not reset:
+            reset = len(entries) < len(self.entries)
+            for index, old in enumerate(self.entries):
+                if index >= len(entries) or entries[index][0] != old[0] or entries[index][2:] != old[2:] or entries[index][1] < old[1]:
+                    reset = True
+                # Preserve overlap order when two pens append to different strokes.
+                if index < len(self.entries) - 1 and index < len(entries) and entries[index] != old:
+                    reset = True
+        if reset:
+            self.size = (width, height, glow)
+            self.entries = []
+            self.ink = np.zeros((height, width, 3), np.uint8)
+            self.mask = np.zeros((height, width), np.uint8)
+            self.glow_ink = np.zeros((max(1, height // 4), max(1, width // 4), 3), np.uint8)
+        if entries == self.entries and not reset:
+            return
+        for index, stroke in enumerate(strokes):
+            previous = self.entries[index][1] if index < len(self.entries) else 0
+            if len(stroke['points']) < 2 or len(stroke['points']) == previous:
+                continue
+            points = np.rint(np.asarray(stroke['points'][max(0, previous - 1):]) * [width, height]).astype(np.int32)
+            color = hex_to_bgr(stroke['color'])
+            thickness = max(1, int(stroke['thickness'] * height / 720))
+            cv2.polylines(self.ink, [points], False, color, thickness, cv2.LINE_AA)
+            cv2.polylines(self.mask, [points], False, 255, thickness, cv2.LINE_AA)
+            if glow:
+                small_points = np.rint(points / [width, height] * self.glow_ink.shape[1::-1]).astype(np.int32)
+                cv2.polylines(self.glow_ink, [small_points], False, color,
+                              max(1, round(thickness * 3 / 4)), cv2.LINE_AA)
+        self.entries = entries
+        self.sources = list(strokes)
+        self.inverse_alpha = cv2.cvtColor(1 - self.mask.astype(np.float32) / 255, cv2.COLOR_GRAY2BGR)
+        self.layer = self.ink
+        if glow:
+            blurred = cv2.GaussianBlur(self.glow_ink, (0, 0), 3)
+            self.layer = cv2.add(self.ink, cv2.resize(blurred, (width, height)))
+
+
+_ink_cache = InkCache()
+
+
+def draw(frame, now, cfg, mirror=False):
+    if not cfg['enabled'] or (not strokes and not any(p['down'] for p in pens.values())):
+        return
+    # Fading changes old strokes every frame; retain its existing compositing behavior.
+    if cfg['fade_after'] > 0:
+        return _draw_fading(frame, now, cfg, mirror)
+    height, width = frame.shape[:2]
+    _ink_cache.refresh(width, height, cfg['glow'])
+    layer = _ink_cache.layer[:, ::-1] if mirror else _ink_cache.layer
+    inverse = _ink_cache.inverse_alpha[:, ::-1] if mirror else _ink_cache.inverse_alpha
+    cv2.add(cv2.multiply(frame, inverse, dtype=cv2.CV_8U), layer, dst=frame)
+    for state in pens.values():
+        if state['down'] and state['point'] is not None:
+            x, y = np.rint(state['point'] * [width, height]).astype(int)
+            if mirror:
+                x = width - 1 - x
+            cv2.circle(frame, (x, y), max(3, int(cfg['thickness'] * height / 720 * 0.6)),
+                       (255, 255, 255), -1, cv2.LINE_AA)
