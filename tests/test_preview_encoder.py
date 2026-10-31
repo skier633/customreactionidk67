@@ -20,8 +20,10 @@ def test_encoder_keeps_latest_frame_without_blocking_camera(monkeypatch):
     monkeypatch.setattr(preview_stream.cv2,'imencode',slow_encode)
     server=preview_stream.PreviewServer()
     try:
+        server.requested = True
         server.update(np.full((32,32,3),10,np.uint8))
         assert started.wait(2)
+        server.requested = True
         for color in (20,30):
             server.offered=0
             server.update(np.full((32,32,3),color,np.uint8))

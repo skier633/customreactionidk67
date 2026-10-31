@@ -343,11 +343,20 @@ class InkCache:
                               max(1, round(thickness * 3 / 4)), cv2.LINE_AA)
         self.entries = entries
         self.sources = list(strokes)
-        self.inverse_alpha = cv2.cvtColor(1 - self.mask.astype(np.float32) / 255, cv2.COLOR_GRAY2BGR)
-        self.layer = self.ink
+        x, y, w, h = cv2.boundingRect(self.mask)
+        padding = 40 if glow else 1
+        self.bounds = (max(0, x-padding), max(0, y-padding),
+                       min(width, x+w+padding), min(height, y+h+padding))
+        x1, y1, x2, y2 = self.bounds
+        coverage = self.mask[y1:y2, x1:x2].astype(np.float32) / 255
+        inverse = cv2.cvtColor(1 - coverage, cv2.COLOR_GRAY2BGR)
+        layer = self.ink[y1:y2, x1:x2]
         if glow:
             blurred = cv2.GaussianBlur(self.glow_ink, (0, 0), 3)
-            self.layer = cv2.add(self.ink, cv2.resize(blurred, (width, height)))
+            halo = cv2.resize(blurred, (width, height))[y1:y2, x1:x2]
+            layer = cv2.add(layer, halo)
+        self.regions = [(layer, inverse), (np.ascontiguousarray(layer[:, ::-1]),
+                                         np.ascontiguousarray(inverse[:, ::-1]))]
 
 
 _ink_cache = InkCache()
@@ -361,9 +370,13 @@ def draw(frame, now, cfg, mirror=False):
         return _draw_fading(frame, now, cfg, mirror)
     height, width = frame.shape[:2]
     _ink_cache.refresh(width, height, cfg['glow'])
-    layer = _ink_cache.layer[:, ::-1] if mirror else _ink_cache.layer
-    inverse = _ink_cache.inverse_alpha[:, ::-1] if mirror else _ink_cache.inverse_alpha
-    cv2.add(cv2.multiply(frame, inverse, dtype=cv2.CV_8U), layer, dst=frame)
+    x1, y1, x2, y2 = _ink_cache.bounds
+    layer, inverse = _ink_cache.regions[int(mirror)]
+    if mirror:
+        x1, x2 = width - x2, width - x1
+    region = frame[y1:y2, x1:x2]
+    if region.size:
+        cv2.add(cv2.multiply(region, inverse, dtype=cv2.CV_8U), layer, dst=region)
     for state in pens.values():
         if state['down'] and state['point'] is not None:
             x, y = np.rint(state['point'] * [width, height]).astype(int)

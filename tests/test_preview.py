@@ -19,6 +19,7 @@ def test_status_display_stays_in_local_preview(monkeypatch, project, studio_prev
                               close=lambda: None)
     monkeypatch.setitem(sys.modules, "pyvirtualcam", SimpleNamespace(Camera=lambda **kw: virtual))
     monkeypatch.setattr(gesture_cam.cv2, "VideoCapture", lambda _: camera)
+    monkeypatch.setattr(gesture_cam, "LatestCapture", lambda cap: cap)
     monkeypatch.setattr(gesture_cam.cv2, "imshow", lambda title, image: shown.append(image.copy()))
     monkeypatch.setattr(gesture_cam.cv2, "waitKey", lambda _: ord("q"))
     monkeypatch.setattr(gesture_cam.cv2, "destroyAllWindows", lambda: None)

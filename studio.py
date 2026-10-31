@@ -384,24 +384,17 @@ def camera_preview():
     if camera_process is None or camera_process.poll() is not None:
         abort(404, "Camera is stopped")
     try:
-        upstream = urllib.request.urlopen("http://127.0.0.1:5051/stream", timeout=3)
+        after = int(request.args.get("after", "-1"))
+    except ValueError:
+        abort(400, "Invalid frame sequence")
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:5051/frame?after={after}", timeout=2) as upstream:
+            data = upstream.read(2_000_000)
+            sequence = upstream.headers.get("X-Frame-Sequence", "0")
+        return Response(data, mimetype="image/jpeg", headers={"Cache-Control": "no-store",
+                                                              "X-Frame-Sequence": sequence})
     except (OSError, urllib.error.URLError):
         return jsonify({"error": "Camera is starting or unavailable"}), 503
-
-    def frames():
-        try:
-            while True:
-                chunk = upstream.read1(65536)
-                if not chunk:
-                    break
-                yield chunk
-        except OSError:
-            pass
-        finally:
-            upstream.close()
-
-    return Response(frames(), content_type="multipart/x-mixed-replace; boundary=frame",
-                    headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
 
 
 @app.post("/api/test")

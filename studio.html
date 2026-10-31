@@ -595,26 +595,49 @@ drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove
 
 let previewTimer = null;
 let cameraOn = false;
+let frameRequest = null;
+let frameUrl = null;
+let frameSequence = -1;
 function cameraOff() {
   cameraOn = false; clearTimeout(previewTimer);
+  if (frameRequest) frameRequest.abort();
+  if (frameUrl) URL.revokeObjectURL(frameUrl);
+  frameUrl = null; frameSequence = -1;
   $("camera-image").hidden = true; $("camera-image").removeAttribute("src");
   $("camera-empty").hidden = false; $("stop-camera").disabled = true;
   $("start-camera").disabled = false; $("camera-status").textContent = "Camera off";
 }
-function nextFrame() {
-  if (cameraOn) previewTimer = setTimeout(() => { $("camera-image").src = "/api/preview?t=" + Date.now(); }, 1000);
+async function nextFrame() {
+  if (!cameraOn) return;
+  const request = new AbortController();
+  frameRequest = request;
+  let delay = 0;
+  let nextUrl = null;
+  try {
+    const response = await fetch("/api/preview?after=" + frameSequence + "&t=" + Date.now(), {cache:"no-store", signal:request.signal});
+    if (!response.ok) throw new Error("Preview unavailable");
+    nextUrl = URL.createObjectURL(await response.blob());
+    const decoded = new Image();
+    decoded.src = nextUrl;
+    await decoded.decode();
+    if (!cameraOn || request.signal.aborted) return;
+    frameSequence = Number(response.headers.get("X-Frame-Sequence") || "-1");
+    const previousUrl = frameUrl;
+    $("camera-image").src = nextUrl;
+    frameUrl = nextUrl; nextUrl = null;
+    if (previousUrl) URL.revokeObjectURL(previousUrl);
+    $("camera-image").hidden = false; $("camera-empty").hidden = true;
+    $("camera-status").textContent = "Camera running";
+  } catch (error) {
+    if (request.signal.aborted) return;
+    $("camera-status").textContent = "Waiting for camera… Check the terminal if it stays here.";
+    delay = 500;
+  } finally {
+    if (nextUrl) URL.revokeObjectURL(nextUrl);
+    if (frameRequest === request) frameRequest = null;
+    if (cameraOn && !request.signal.aborted) previewTimer = setTimeout(nextFrame, delay);
+  }
 }
-$("camera-image").onload = () => {
-  if (!cameraOn) return;
-  $("camera-image").hidden = false; $("camera-empty").hidden = true;
-  $("camera-status").textContent = "Camera running";
-};
-$("camera-image").onerror = () => {
-  if (!cameraOn) return;
-  $("camera-image").hidden = true; $("camera-empty").hidden = false;
-  $("camera-status").textContent = "Starting camera… Check the terminal if it stays here.";
-  nextFrame();
-};
 $("start-camera").onclick = async () => {
   $("start-camera").disabled = true;
   const result = await api("/api/camera", {action:"start", camera:Number($("camera-number").value)});

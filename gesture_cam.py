@@ -10,6 +10,8 @@ import time
 import cv2
 import numpy as np
 
+from capture import LatestCapture
+
 import effects
 import gestures
 import pen
@@ -92,9 +94,13 @@ def read_test_file():
 
 
 def main(camera_number=CAMERA_NUMBER, studio_preview=False):
+    # Small per-frame operations compete with MediaPipe and preview encoding.
+    cv2.setNumThreads(1)
     cap = cv2.VideoCapture(camera_number)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
+    cap.set(cv2.CAP_PROP_FPS, 30)
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
     ok, frame = cap.read()
     if not ok:
         print("couldnt open the camera. on mac check System Settings > Privacy > Camera for Terminal/VS Code")
@@ -128,6 +134,7 @@ def main(camera_number=CAMERA_NUMBER, studio_preview=False):
     if studio_preview:
         from preview_stream import PreviewServer
         stream = PreviewServer()
+    cap = LatestCapture(cap)
     show_debug = SHOW_DEBUG
     show_hud = True
     display_fps = 30.0
